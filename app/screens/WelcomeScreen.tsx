@@ -17,7 +17,7 @@ export default function WelcomeScreen() {
   const router = useRouter();
 
   const handleStart = () => {
-    router.push("/(auth)/register");
+    router.push("/onboarding");
   };
 
   const handleLogin = () => {
