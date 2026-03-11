@@ -1,6 +1,6 @@
-import { Text, View } from "react-native";
-import WelcomeScreen from "./screens/WelcomeScreen";
+// app/index.tsx
+import { Redirect } from "expo-router";
 
 export default function Index() {
-  return <WelcomeScreen/>;
+  return <Redirect href="/(tabs)" />;
 }
