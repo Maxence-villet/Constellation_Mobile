@@ -13,15 +13,18 @@ interface ButtonProps {
   icon?: string;
 }
 
-export default function ButtonPrimary({
+export default function ButtonSecondary({
   label,
   // onPress,
+  variant = "primary",
+  disabled = false,
   style,
+  textStyle,
   icon,
 }: ButtonProps) {
   return (
-    <View style={[styles.base, styles.primary, style]}>
-      <Text style={[styles.label, styles.labelPrimary]}>
+    <View style={[styles.base, styles.secondary, style]}>
+      <Text style={[styles.label, styles.labelSecondary]}>
         {label}
         {icon && <Text>{icon}</Text>}
       </Text>

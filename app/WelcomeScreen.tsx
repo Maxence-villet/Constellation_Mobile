@@ -10,9 +10,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ThemedText } from "./components/themed-text";
-import { ThemedView } from "./components/themed-view";
-import Button from "./components/ui/button";
+import ButtonPrimary from "./components/ui/button";
+import ButtonSecondary from "./components/ui/button secondary";
 import { Colors } from "./constants/colors";
 
 export default function WelcomeScreen() {
@@ -54,31 +53,14 @@ export default function WelcomeScreen() {
 
         <View style={styles.actionsSection}>
           <Link href="/OnboardingScreen">
-            <Button
-              label="Commencer l'aventure"
-              icon="◆"
-              variant="primary"
-              // onPress={}
-            />
+            <ButtonPrimary label="Commencer l'aventure" icon="◆" />
           </Link>
-
-          <ThemedView>
-            <ThemedText type="title">
-              <Link href="/OnboardingScreen">
-                <ThemedText type="title">Voici mon exemple toto</ThemedText>
-              </Link>
-            </ThemedText>
-          </ThemedView>
 
           <Divider />
 
-          <Button
-            label="J'ai déjà un compte"
-            variant="secondary"
-            // onPress={console.log("Pressed")}
-          />
+          <ButtonSecondary label="J'ai déjà un compte" />
 
-          <Button
+          <ButtonSecondary
             label="Créer un compte"
             variant="secondary"
             // onPress={console.log("")}
