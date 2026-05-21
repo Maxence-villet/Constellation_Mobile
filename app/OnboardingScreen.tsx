@@ -1,36 +1,39 @@
+import { Colors } from "@/app/constants/colors";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
   Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Colors } from "@/app/constants/colors";
 
 const { height } = Dimensions.get("window");
 
 const SLIDES = [
   {
-    image: require("../../../assets/images/onboarding/slide1.png"),
+    image: require("@/assets/images/onboarding/slide1.png"),
     titleLine1: "Votre équipe,",
     titleLine2: "votre univers",
-    subtitle: "Créez votre Constellation, rassemblez vos Étoiles et organisez vos projets facilement.",
+    subtitle:
+      "Créez votre Constellation, rassemblez vos Étoiles et organisez vos projets facilement.",
   },
   {
-    image: require("../../../assets/images/onboarding/slide2.png"),
+    image: require("@/assets/images/onboarding/slide2.png"),
     titleLine1: "Brillez chaque",
     titleLine2: "semaine",
-    subtitle: "Gagnez des Points Stellaires en accomplissant vos tâches. Le bilan hebdomadaire récompense les meilleures Étoiles.",
+    subtitle:
+      "Gagnez des Points Stellaires en accomplissant vos tâches. Le bilan hebdomadaire récompense les meilleures Étoiles.",
   },
   {
-    image: require("../../../assets/images/onboarding/slide3.png"),
+    image: require("@/assets/images/onboarding/slide3.png"),
     titleLine1: "Chaque tâche",
     titleLine2: "a son étoile",
-    subtitle: "Assignez, déléguez, suivez. Chaque membre sait exactement ce qu'il doit accomplir.",
+    subtitle:
+      "Assignez, déléguez, suivez. Chaque membre sait exactement ce qu'il doit accomplir.",
   },
 ];
 
@@ -41,21 +44,20 @@ export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const slide = SLIDES[currentIndex];
 
-  function goToNextSlide() {
-    if (currentIndex === SLIDES.length - 1) {
-      router.replace("/(tabs)");
-    } else {
-      setCurrentIndex(currentIndex + 1);
-    }
-  }
+  // function goToNextSlide() {
+  //   if (currentIndex === SLIDES.length - 1) {
+  //     router.replace("/(tabs)");
+  //   } else {
+  //     setCurrentIndex(currentIndex + 1);
+  //   }
+  // }
 
-  function skipOnboarding() {
-    router.replace("/(tabs)");
-  }
+  // function skipOnboarding() {
+  //   router.replace("/(tabs)");
+  // }
 
   return (
     <View style={styles.screen}>
-
       <View style={styles.illustrationZone} pointerEvents="none">
         <Image
           source={slide.image}
@@ -65,7 +67,6 @@ export default function OnboardingScreen() {
       </View>
 
       <View style={styles.bottomZone}>
-
         <View style={styles.textContent}>
           <Text style={styles.titleDark}>{slide.titleLine1}</Text>
           <Text style={styles.titleOrange}>{slide.titleLine2}</Text>
@@ -82,23 +83,22 @@ export default function OnboardingScreen() {
             ))}
           </View>
 
-          <TouchableOpacity onPress={skipOnboarding}>
+          <TouchableOpacity /*onPress={skipOnboarding} */>
             <Text style={styles.skipLabel}>Skip</Text>
           </TouchableOpacity>
         </SafeAreaView>
 
         <TouchableOpacity
-          onPress={goToNextSlide}
+          // onPress={goToNextSlide}
           style={styles.cornerBlob}
           activeOpacity={0.85}
         >
           <Image
-            source={require("../../../assets/images/icons/button.png")}
+            source={require("@/assets/images/icons/button.png")}
             style={styles.cornerBlobImage}
             resizeMode="stretch"
           />
         </TouchableOpacity>
-
       </View>
     </View>
   );

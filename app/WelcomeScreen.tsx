@@ -1,32 +1,28 @@
+import { LinearGradient } from "expo-linear-gradient";
+import { Link } from "expo-router";
 import React from "react";
 import {
-  View,
   Image,
-  Text,
-  StyleSheet,
   ImageBackground,
   Platform,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { Button } from "../components/ui/button";
-import { Colors } from "../constants/colors";
+import { ThemedText } from "./components/themed-text";
+import { ThemedView } from "./components/themed-view";
+import Button from "./components/ui/button";
+import { Colors } from "./constants/colors";
 
 export default function WelcomeScreen() {
-  const router = useRouter();
-
-  const handleStart = () => {
-    router.push("/onboarding");
-  };
-
-  const handleLogin = () => {
-    router.push("/(auth)/login");
-  };
-
   return (
     <LinearGradient
-      colors={[Colors.home.darkBlue, Colors.home.mediumBlue, Colors.home.lightPurple]}
+      colors={[
+        Colors.home.darkBlue,
+        Colors.home.mediumBlue,
+        Colors.home.lightPurple,
+      ]}
       locations={[0, 0.55, 1]}
       style={styles.gradient}
     >
@@ -51,30 +47,47 @@ export default function WelcomeScreen() {
             resizeMode="contain"
           />
 
-          <Text style={styles.tagline}>METTEZ DE L'ORDRE DANS VOTRE UNIVERS</Text>
+          <Text style={styles.tagline}>
+            METTEZ DE L'ORDRE DANS VOTRE UNIVERS
+          </Text>
         </View>
 
         <View style={styles.actionsSection}>
-          <Button
-            label="Commencer l'aventure"
-            icon="◆"
-            variant="primary"
-            onPress={handleStart}
-          />
+          <Link href="/OnboardingScreen">
+            <Button
+              label="Commencer l'aventure"
+              icon="◆"
+              variant="primary"
+              // onPress={}
+            />
+          </Link>
+
+          <ThemedView>
+            <ThemedText type="title">
+              <Link href="/OnboardingScreen">
+                <ThemedText type="title">Voici mon exemple toto</ThemedText>
+              </Link>
+            </ThemedText>
+          </ThemedView>
 
           <Divider />
 
           <Button
             label="J'ai déjà un compte"
             variant="secondary"
-            onPress={handleLogin}
+            // onPress={console.log("Pressed")}
+          />
+
+          <Button
+            label="Créer un compte"
+            variant="secondary"
+            // onPress={console.log("")}
           />
         </View>
       </SafeAreaView>
     </LinearGradient>
   );
 }
-
 
 function Divider() {
   return (
