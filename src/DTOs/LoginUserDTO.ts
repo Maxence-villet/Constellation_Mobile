@@ -1,5 +1,5 @@
 // src/DTOs/LoginUserDTO.ts
 export interface LoginUserDTO {
-  email: string;
+  username: string;
   password: string;
 }

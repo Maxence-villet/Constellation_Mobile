@@ -1,10 +1,10 @@
-// src/Http/Controllers/useAuthController.ts
+import { FetchCurrentUserAction } from "@/src/Actions/FetchCurrentUserAction";
 import { LoginUserAction } from "@/src/Actions/LoginUserAction";
 import { LogoutUserAction } from "@/src/Actions/LogoutUserAction";
 import { LoginUserDTO } from "@/src/DTOs/LoginUserDTO";
 import { authEmitter, AuthEvents } from "@/src/Events/AuthEvents";
 import { User } from "@/src/Models/User";
-import { getUserData } from "@/src/utils/storage";
+import { clearUserData, getUserData, storeUserData } from "@/src/utils/storage";
 import { useEffect, useState } from "react";
 
 export function useAuthController() {
@@ -14,20 +14,37 @@ export function useAuthController() {
   useEffect(() => {
     const loadUser = async () => {
       const stored = await getUserData();
-      if (stored) {
-        setUser(stored);
-      }
+      if (stored) setUser(stored);
       setIsLoading(false);
     };
     loadUser();
 
-    authEmitter.on(AuthEvents.LOGGIN_SUCCESS, (loggedUser) =>
-      setUser(loggedUser),
-    );
-    authEmitter.on(AuthEvents.LOGOUT, () => setUser(null));
+    const handleLoginSuccess = async ({ token }: { token: string }) => {
+      try {
+        const fetchAction = new FetchCurrentUserAction();
+        const userData = await fetchAction.execute();
+        if (userData && userData.id) {
+          await storeUserData(userData);
+          setUser(userData);
+        } else {
+          await clearUserData();
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Erreur récupération utilisateur", error);
+        await clearUserData();
+        setUser(null);
+      }
+    };
+
+    authEmitter.on(AuthEvents.LOGIN_SUCCESS, handleLoginSuccess);
+    authEmitter.on(AuthEvents.LOGOUT, () => {
+      clearUserData();
+      setUser(null);
+    });
 
     return () => {
-      authEmitter.off(AuthEvents.LOGGIN_SUCCESS);
+      authEmitter.off(AuthEvents.LOGIN_SUCCESS, handleLoginSuccess);
       authEmitter.off(AuthEvents.LOGOUT);
     };
   }, []);

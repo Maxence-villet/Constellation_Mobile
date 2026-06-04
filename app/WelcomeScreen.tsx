@@ -1,5 +1,6 @@
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { Link } from "expo-router";
 import React from "react";
 import {
   Image,
@@ -7,14 +8,34 @@ import {
   Platform,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { RootStackParamList } from "../routes/app.routes";
 import ButtonPrimary from "./components/ui/button";
 import ButtonSecondary from "./components/ui/button secondary";
 import { Colors } from "./constants/colors";
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export default function WelcomeScreen() {
+  const navigation = useNavigation<NavigationProp>();
+
+  const handleGetStarted = () => {
+    // À définir plus tard (OnboardingScreen par exemple)
+    console.log("Commencer l'aventure");
+  };
+
+  const handleLogin = () => {
+    navigation.navigate("Login");
+  };
+
+  const handleRegister = () => {
+    // À définir plus tard
+    console.log("Créer un compte");
+  };
+
   return (
     <LinearGradient
       colors={[
@@ -39,32 +60,30 @@ export default function WelcomeScreen() {
             style={styles.logo}
             resizeMode="contain"
           />
-
           <Image
             source={require("@/assets/images/Artboard/Name Logo.png")}
             style={styles.nameLogo}
             resizeMode="contain"
           />
-
           <Text style={styles.tagline}>
             METTEZ DE L'ORDRE DANS VOTRE UNIVERS
           </Text>
         </View>
 
         <View style={styles.actionsSection}>
-          <Link href="/OnboardingScreen">
+          <TouchableOpacity onPress={handleGetStarted}>
             <ButtonPrimary label="Commencer l'aventure" icon="◆" />
-          </Link>
+          </TouchableOpacity>
 
           <Divider />
 
-          <ButtonSecondary label="J'ai déjà un compte" />
+          <TouchableOpacity onPress={handleLogin}>
+            <ButtonSecondary label="J'ai déjà un compte" />
+          </TouchableOpacity>
 
-          <ButtonSecondary
-            label="Créer un compte"
-            variant="secondary"
-            // onPress={console.log("")}
-          />
+          <TouchableOpacity onPress={handleRegister}>
+            <ButtonSecondary label="Créer un compte" variant="secondary" />
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </LinearGradient>

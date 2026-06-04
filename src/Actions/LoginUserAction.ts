@@ -1,36 +1,26 @@
 // src/Actions/LoginUserAction.ts
 
 import { LoginUserDTO } from "../DTOs/LoginUserDTO";
-import { authEmitter } from "../Events/AuthEvents";
-import { User } from "../Models/User";
-import { storeUserData } from "../utils/storage";
+import { authEmitter, AuthEvents } from "../Events/AuthEvents";
+import { http } from "../utils/http";
+import { storeAccessToken } from "../utils/storage";
 
 export class LoginUserAction {
   async execute(dto: LoginUserDTO) {
-    const response = await fetch("http://localhost:3000/login", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
+    const data = await http.postForm<{
+      access_token: string;
+      token_type: string;
+    }>(
+      {
+        username: dto.username,
+        password: dto.password,
       },
-      body: JSON.stringify(dto),
-    });
+      "auth/login",
+    );
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Something went wrong");
-    }
-
-    const data = await response.json();
-
-    const user = new User({
-      id: data.user.id,
-      email: data.user.email,
-      name: data.user.name,
-      token: data.token,
-    });
-
-    await storeUserData(user);
-    authEmitter.emit("LOGGIN_SUCCESS", user);
-    return user;
+    const token = `Bearer ${data.access_token}`;
+    await storeAccessToken(token);
+    authEmitter.emit(AuthEvents.LOGIN_SUCCESS, { token });
+    return { token };
   }
 }
