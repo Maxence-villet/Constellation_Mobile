@@ -22,11 +22,6 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export default function WelcomeScreen() {
   const navigation = useNavigation<NavigationProp>();
 
-  const handleGetStarted = () => {
-    // À définir plus tard (OnboardingScreen par exemple)
-    console.log("Commencer l'aventure");
-  };
-
   const handleLogin = () => {
     navigation.navigate("Login");
   };
@@ -71,7 +66,7 @@ export default function WelcomeScreen() {
         </View>
 
         <View style={styles.actionsSection}>
-          <TouchableOpacity onPress={handleGetStarted}>
+          <TouchableOpacity onPress={handleRegister}>
             <ButtonPrimary label="Commencer l'aventure" icon="◆" />
           </TouchableOpacity>
 
@@ -79,10 +74,6 @@ export default function WelcomeScreen() {
 
           <TouchableOpacity onPress={handleLogin}>
             <ButtonSecondary label="J'ai déjà un compte" />
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={handleRegister}>
-            <ButtonSecondary label="Créer un compte" variant="secondary" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -107,6 +98,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     paddingHorizontal: 28,
+    top: -50,
   },
 
   heroSection: {

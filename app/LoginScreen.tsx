@@ -4,6 +4,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -36,7 +37,6 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
       await login(dto);
-      // La navigation se fait automatiquement via le guard (user devient non null)
     } catch (e: any) {
       setError(e.message ?? "Une erreur est survenue.");
     } finally {
@@ -54,46 +54,87 @@ export default function LoginScreen() {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <TouchableOpacity style={styles.back} onPress={goBack}>
-          <Text style={styles.backText}>← Retour</Text>
-        </TouchableOpacity>
-
-        <View style={styles.card}>
-          <Text style={styles.title}>Connexion</Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Adresse mail"
-            placeholderTextColor="#9ca3af"
-            value={dto.username}
-            onChangeText={(v) => setDto((prev) => ({ ...prev, username: v }))}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Mot de passe"
-            placeholderTextColor="#9ca3af"
-            value={dto.password}
-            onChangeText={(v) => setDto((prev) => ({ ...prev, password: v }))}
-            secureTextEntry
-          />
-
-          {error && <Text style={styles.error}>{error}</Text>}
-
-          <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Se connecter</Text>
-            )}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack}>
+            <Text style={styles.backButtonText}>‹</Text>
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Connexion</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.content}>
+          <Text style={styles.welcomeText}>Heureux de vous revoir !</Text>
+
+          <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder="Adresse mail"
+              placeholderTextColor="#9ca3af"
+              value={dto.username}
+              onChangeText={(v) => setDto((prev) => ({ ...prev, username: v }))}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Mot de passe"
+              placeholderTextColor="#9ca3af"
+              value={dto.password}
+              onChangeText={(v) => setDto((prev) => ({ ...prev, password: v }))}
+              secureTextEntry
+            />
+
+            {error && <Text style={styles.errorText}>{error}</Text>}
+            <TouchableOpacity style={styles.forgotPasswordButton}>
+              <Text style={styles.forgotPasswordText}>
+                Mot de passe oublié ?
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.loginButton, isLoading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.loginButtonText}>Se connecter</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.socialDivider}>
+            <Text style={styles.socialDividerText}>Se connecter avec</Text>
+          </View>
+
+          <View style={styles.socialContainer}>
+            <TouchableOpacity style={styles.socialButton}>
+              <Image
+                source={{
+                  uri: "https://cdn-icons-png.flaticon.com/512/0/747.png",
+                }}
+                style={styles.socialIcon}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Image
+                source={{
+                  uri: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
+                }}
+                style={styles.socialIcon}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Pas encore de compte ? </Text>
+            <TouchableOpacity>
+              <Text style={styles.registerText}>Inscrivez-vous</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -103,70 +144,140 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#ffffff",
   },
   container: {
+    flex: 1,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingTop: 12,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: "#0f172a",
+    bottom: 2,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#0a2540",
+  },
+  content: {
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: "center",
   },
-  back: {
-    position: "absolute",
-    top: 16,
-    left: 24,
-  },
-  backText: {
-    fontSize: 15,
-    color: "#6366f1",
-    fontWeight: "500",
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  title: {
-    fontSize: 24,
+  welcomeText: {
+    fontSize: 26,
     fontWeight: "700",
-    color: "#111827",
-    marginBottom: 24,
+    color: "#0a2540",
     textAlign: "center",
+    marginBottom: 40,
+  },
+  form: {
+    marginBottom: 32,
   },
   input: {
+    height: 56,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: "#111827",
-    marginBottom: 14,
-    backgroundColor: "#f9fafb",
+    borderColor: "#0d084d33",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: "#0f172a",
+    backgroundColor: "#fff",
+    marginBottom: 20,
   },
-  error: {
-    color: "#ef4444",
-    fontSize: 13,
-    marginBottom: 12,
-    textAlign: "center",
+  forgotPasswordButton: {
+    alignSelf: "flex-end",
+    marginBottom: 24,
   },
-  button: {
-    backgroundColor: "#6366f1",
-    borderRadius: 10,
-    paddingVertical: 14,
+  forgotPasswordText: {
+    color: "#0a2540",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  loginButton: {
+    backgroundColor: "#0d084d",
+    height: 56,
+    borderRadius: 16,
     alignItems: "center",
-    marginTop: 4,
+    justifyContent: "center",
+    shadowColor: "#0d084d",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
-  buttonText: {
+  loginButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  socialDivider: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  socialDividerText: {
+    color: "#9ca3af",
+    fontSize: 14,
+  },
+  socialContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 20,
+    marginBottom: 40,
+  },
+  socialButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  socialIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: "contain",
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  footerText: {
+    color: "#9ca3af",
+    fontSize: 14,
+  },
+  registerText: {
+    color: "#6366f1",
+    fontWeight: "600",
+    fontSize: 14,
   },
 });
