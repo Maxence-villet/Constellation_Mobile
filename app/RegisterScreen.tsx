@@ -1,52 +1,74 @@
-// app/LoginScreen.tsx
+// app/RegisterScreen.tsx
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RootStackParamList } from "../routes/app.routes";
 import { useAuth } from "../src/Contexts/AuthContexts";
-import { LoginUserDTO } from "../src/DTOs/LoginUserDTO";
+import { RegisterUserDTO } from "../src/DTOs/RegisterUserDTO";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-export default function LoginScreen() {
-  const { login } = useAuth();
+export default function RegisterScreen() {
+  const { register } = useAuth();
   const navigation = useNavigation<NavigationProp>();
 
-  const [dto, setDto] = useState<LoginUserDTO>({ username: "", password: "" });
+  const [dto, setDto] = useState<RegisterUserDTO>({
+    firstName: "",
+    lastName: "",
+    pseudo: "",
+    email: "",
+    password: "",
+  });
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     setError(null);
-    if (!dto.username.trim() || !dto.password.trim()) {
-      setError("Veuillez remplir tous les champs.");
+
+    if (
+      !dto.firstName.trim() ||
+      !dto.lastName.trim() ||
+      !dto.pseudo.trim() ||
+      !dto.email.trim() ||
+      !dto.password.trim()
+    ) {
+      setError("Tous les champs sont obligatoires.");
       return;
     }
+
+    if (dto.password !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas.");
+      return;
+    }
+
     try {
       setIsLoading(true);
-      await login(dto);
-    } catch (e: any) {
-      setError(e.message ?? "Une erreur est survenue.");
+      await register(dto);
+      Alert.alert("Succès", "Compte créé ! Connectez-vous.", [
+        { text: "OK", onPress: () => navigation.navigate("Login") },
+      ]);
+    } catch (err: any) {
+      setError(err.message ?? "Une erreur est survenue.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const goBack = () => {
-    navigation.goBack();
-  };
+  const goBack = () => navigation.goBack();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -58,25 +80,47 @@ export default function LoginScreen() {
           <TouchableOpacity style={styles.backButton} onPress={goBack}>
             <Text style={styles.backButtonText}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Connexion</Text>
+          <Text style={styles.headerTitle}>Inscription</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.welcomeText}>Heureux de vous revoir !</Text>
+          <Text style={styles.welcomeText}>Rejoignez-nous !</Text>
 
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="Adresse mail"
+              placeholder="Prénom"
               placeholderTextColor="#9ca3af"
-              value={dto.username}
-              onChangeText={(v) => setDto((prev) => ({ ...prev, username: v }))}
+              value={dto.firstName}
+              onChangeText={(v) =>
+                setDto((prev) => ({ ...prev, firstName: v }))
+              }
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Nom"
+              placeholderTextColor="#9ca3af"
+              value={dto.lastName}
+              onChangeText={(v) => setDto((prev) => ({ ...prev, lastName: v }))}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Pseudo"
+              placeholderTextColor="#9ca3af"
+              value={dto.pseudo}
+              onChangeText={(v) => setDto((prev) => ({ ...prev, pseudo: v }))}
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#9ca3af"
+              value={dto.email}
+              onChangeText={(v) => setDto((prev) => ({ ...prev, email: v }))}
               keyboardType="email-address"
               autoCapitalize="none"
-              autoCorrect={false}
             />
-
             <TextInput
               style={styles.input}
               placeholder="Mot de passe"
@@ -85,23 +129,29 @@ export default function LoginScreen() {
               onChangeText={(v) => setDto((prev) => ({ ...prev, password: v }))}
               secureTextEntry
             />
+            <TextInput
+              style={styles.input}
+              placeholder="Confirmer le mot de passe"
+              placeholderTextColor="#9ca3af"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
 
             {error && <Text style={styles.errorText}>{error}</Text>}
-            <TouchableOpacity style={styles.forgotPasswordButton}>
-              <Text style={styles.forgotPasswordText}>
-                Mot de passe oublié ?
-              </Text>
-            </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.loginButton, isLoading && styles.buttonDisabled]}
-              onPress={handleLogin}
+              style={[
+                styles.registerButton,
+                isLoading && styles.buttonDisabled,
+              ]}
+              onPress={handleRegister}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.loginButtonText}>Se connecter</Text>
+                <Text style={styles.registerButtonText}>S'inscrire</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -130,9 +180,9 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Pas encore de compte ? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-              <Text style={styles.registerText}>Inscrivez-vous</Text>
+            <Text style={styles.footerText}>Déjà un compte ? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+              <Text style={styles.loginText}>Connectez-vous</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -200,18 +250,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#0f172a",
     backgroundColor: "#fff",
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  forgotPasswordButton: {
-    alignSelf: "flex-end",
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    color: "#0a2540",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  loginButton: {
+  registerButton: {
     backgroundColor: "#0d084d",
     height: 56,
     borderRadius: 16,
@@ -222,11 +263,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 5,
+    marginTop: 8,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
-  loginButtonText: {
+  registerButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
@@ -275,7 +317,7 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
     fontSize: 14,
   },
-  registerText: {
+  loginText: {
     color: "#6366f1",
     fontWeight: "600",
     fontSize: 14,

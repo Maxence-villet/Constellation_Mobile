@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import { getAccessToken } from "./storage";
 
 const BASE_URL =
-  (Constants.expoConfig?.extra?.apiUrl ?? "http://192.168.1.103:8000").replace(
+  (Constants.expoConfig?.extra?.apiUrl ?? "http://192.168.1.102:8000").replace(
     /\/$/,
     "",
   ) + "/";
@@ -43,7 +43,7 @@ export const http = {
   },
 
   delete: async (path: string, auth = true): Promise<void> => {
-    const res = await fetch(`http:${BASE_URL}${path}`, {
+    const res = await fetch(`http://${BASE_URL}${path}`, {
       method: "DELETE",
       headers: await getHeaders(auth),
     });

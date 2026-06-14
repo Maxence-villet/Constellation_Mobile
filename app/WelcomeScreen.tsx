@@ -1,3 +1,4 @@
+// app/WelcomeScreen.tsx
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,8 +28,7 @@ export default function WelcomeScreen() {
   };
 
   const handleRegister = () => {
-    // À définir plus tard
-    console.log("Créer un compte");
+    navigation.navigate("Register");
   };
 
   return (

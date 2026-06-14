@@ -1,7 +1,10 @@
+// Http/Controllers/useAuthController.ts
 import { FetchCurrentUserAction } from "@/src/Actions/FetchCurrentUserAction";
 import { LoginUserAction } from "@/src/Actions/LoginUserAction";
 import { LogoutUserAction } from "@/src/Actions/LogoutUserAction";
+import { RegisterUserAction } from "@/src/Actions/RegisterUserAction";
 import { LoginUserDTO } from "@/src/DTOs/LoginUserDTO";
+import { RegisterUserDTO } from "@/src/DTOs/RegisterUserDTO";
 import { authEmitter, AuthEvents } from "@/src/Events/AuthEvents";
 import { User } from "@/src/Models/User";
 import { clearUserData, getUserData, storeUserData } from "@/src/utils/storage";
@@ -59,5 +62,10 @@ export function useAuthController() {
     action.execute();
   };
 
-  return { user, isLoading, login, logout };
+  const register = async (dto: RegisterUserDTO) => {
+    const action = new RegisterUserAction();
+    await action.execute(dto);
+  };
+
+  return { user, isLoading, login, logout, register };
 }
