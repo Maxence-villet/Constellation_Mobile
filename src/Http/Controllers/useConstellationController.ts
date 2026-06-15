@@ -1,5 +1,6 @@
 import { CreateConstellationAction } from "@/src/Actions/CreateConstellationAction";
 import { FetchConstellationsAction } from "@/src/Actions/FetchConstellationsAction";
+import { FetchMembersAction } from "@/src/Actions/FetchMembersAction";
 import { CreateConstellationDTO } from "@/src/DTOs/CreateConstellationDTO";
 import { Constellation } from "@/src/Models/Constellation";
 import { useEffect, useState } from "react";
@@ -11,9 +12,28 @@ export function useConstellationController() {
   const loadConstellations = async () => {
     try {
       setIsLoading(true);
+
       const action = new FetchConstellationsAction();
       const data = await action.execute();
-      setConstellations(data);
+
+      const membersAction = new FetchMembersAction();
+      const constellationsWithMembers = await Promise.all(
+        data.map(async (constellation: any) => {
+          try {
+            const members = await membersAction.execute(constellation.id);
+            return new Constellation({
+              ...constellation,
+            });
+          } catch (error) {
+            console.error("Erreur lors de la récupération des membres", error);
+            return new Constellation({
+              ...constellation,
+            });
+          }
+        }),
+      );
+
+      setConstellations(constellationsWithMembers);
     } catch (error: any) {
       if (
         error.message?.includes("Aucune constellation") ||

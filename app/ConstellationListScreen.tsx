@@ -2,11 +2,11 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useCallback } from "react";
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RootStackParamList } from "../routes/app.routes";
@@ -66,11 +66,20 @@ export default function ConstellationListScreen() {
       </View>
       <FlatList
         data={constellations}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) =>
+          item?.id ? String(item.id) : `fallback-${index}`
+        }
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.constName}>{item.name}</Text>
             <Text style={styles.constDesc}>{item.description}</Text>
+            <View style={styles.members}>
+              {item.members?.slice(0, 3).map((member) => (
+                <Text key={String(member.id)} style={styles.memberText}>
+                  {member.user.firstName?.charAt(0) ?? "?"}
+                </Text>
+              ))}
+            </View>
           </View>
         )}
         refreshing={isLoading}
@@ -121,5 +130,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  members: {
+    flexDirection: "row",
+    marginTop: 16,
+    gap: 8, // espace entre les cercles
+  },
+  memberText: {
+    backgroundColor: "#FF660070",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    textAlign: "center",
+    textAlignVertical: "center",
+    color: "#FF6600",
+    fontWeight: "bold",
   },
 });
