@@ -26,7 +26,8 @@ projet/
     ├── Providers/              # One-time service initialization
     ├── Storage/                # AsyncStorage classes per model
     ├── utils/
-    │   └── storage.ts          # Generic AsyncStorage helpers (user session)
+    │   ├── storage.ts          # Generic AsyncStorage helpers (user session)
+    │   └── http.ts              # Centralized API client — ONLY file allowed to call fetch()
     └── View/
         └── Components/         # Pure UI components (no business logic)
 ```
@@ -126,19 +127,115 @@ export class [Action][ModelName]Action {
 **Template (async — API call):**
 
 ```ts
+import { http } from "../utils/http";
+
 export class [Action][ModelName]Action {
   async execute(dto: [Action][ModelName]DTO): Promise<[ModelName]> {
-    const response = await fetch("...", { method: "POST", body: JSON.stringify(dto) });
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Something went wrong");
-    }
-    const data = await response.json();
+    // NEVER call fetch() directly here — always go through src/utils/http.ts
+    const data = await http.post<[ModelName]Attributes>(dto, "[resource-path]", /* auth */ true);
     const result = new [ModelName](data);
     emitter.emit([Domain]Events.[EVENT_NAME], result);
     return result;
   }
 }
+```
+
+**Rule:** `http.ts` already throws an `Error` on non-2xx responses (using the backend's `error.detail`, FastAPI convention). Do NOT wrap calls in extra try/catch inside the Action unless you need to transform the error message — let it propagate to the Controller.
+
+---
+
+### HTTP CLIENT — `src/utils/http.ts`
+
+**When to use:** Every single network call to the backend, with no exception.
+
+**Rules:**
+
+- This is the ONLY file allowed to call `fetch()` directly in the entire codebase
+- Exposes exactly four methods: `get`, `post`, `delete`, `postForm`
+- `BASE_URL` is read once from `app.config.js` (`extra.apiUrl`, backed by `process.env.API_URL`) and already includes the scheme (`http://`/`https://`) and trailing slash — NEVER prepend `http://` again when building a path, and NEVER hardcode a host/IP inside an Action
+- Each method takes an `auth` boolean (default varies per method) that, when `true`, injects an `Authorization` header built from `getAccessToken()` (from `src/utils/storage.ts`)
+- On non-2xx response, every method throws `new Error(error.detail)` (FastAPI error convention) — Actions let this propagate, Controllers catch it if they need to surface it to the UI
+- `postForm` exists specifically for FastAPI OAuth2 endpoints (e.g. `auth/login`) expecting `application/x-www-form-urlencoded` instead of JSON — use `post` for every other JSON endpoint
+- NO React, NO state, NO business logic — this file is a thin transport layer only
+
+**Template:**
+
+```ts
+// src/utils/http.ts
+import Constants from "expo-constants";
+import { getAccessToken } from "./storage";
+
+const BASE_URL =
+  (Constants.expoConfig?.extra?.apiUrl ?? "http://192.168.1.102:8000").replace(
+    /\/$/,
+    "",
+  ) + "/";
+
+async function getHeaders(auth = false): Promise<HeadersInit> {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (auth) {
+    const token = await getAccessToken();
+    if (token) headers["Authorization"] = token;
+  }
+  return headers;
+}
+
+export const http = {
+  get: async <T>(path: string, auth = true): Promise<T> => {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "GET",
+      headers: await getHeaders(auth),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail);
+    }
+    return res.json();
+  },
+
+  post: async <T>(body: unknown, path: string, auth = false): Promise<T> => {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: await getHeaders(auth),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail);
+    }
+    return res.json();
+  },
+
+  delete: async (path: string, auth = true): Promise<void> => {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "DELETE",
+      headers: await getHeaders(auth),
+    });
+    if (!res.ok) throw new Error("Delete failed");
+  },
+
+  postForm: async <T>(
+    body: Record<string, string>,
+    path: string,
+    auth = false,
+  ): Promise<T> => {
+    const formBody = new URLSearchParams();
+    Object.entries(body).forEach(([key, value]) =>
+      formBody.append(key, value),
+    );
+
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: await getHeaders(auth),
+      body: formBody.toString(),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail);
+    }
+    return res.json();
+  },
+};
 ```
 
 ---
@@ -390,6 +487,32 @@ export type RootStackParamList = {
 
 ---
 
+## AUTH FLOW — Reference pattern for backend connection
+
+Authentication is the canonical example of an Action calling the backend through `http.ts`. Reuse this exact shape for any new feature requiring login-gated API access.
+
+```
+LoginScreen → useAuth().login(dto)
+            → useAuthController.login()
+            → new LoginUserAction().execute(dto)
+                 → http.postForm({ username, password }, "auth/login")
+                 → storeAccessToken(token)
+                 → authEmitter.emit(AuthEvents.LOGIN_SUCCESS, { token })
+            → useAuthController's useEffect listener catches LOGIN_SUCCESS
+                 → new FetchCurrentUserAction().execute()
+                 → storeUserData(user) + setUser(user)
+            → AuthContext re-renders → app.routes.tsx switches AuthStack → AppStack
+```
+
+**Rules to follow:**
+
+- An Action that authenticates (`LoginUserAction`) must NOT itself fetch the user profile. It only obtains/stores the token and emits an event. A separate Action (`FetchCurrentUserAction`) — triggered by the Controller's event listener — fetches the profile. This keeps each Action single-purpose and lets other Listeners react to `LOGIN_SUCCESS` independently.
+- `LogoutUserAction.execute()` clears storage (`clearUserData`) and emits `AuthEvents.LOGOUT`; the Controller's listener resets `user` to `null`.
+- Route protection lives in exactly one place: `routes/app.routes.tsx` reads `user`/`isLoading` from `useAuth()` and picks `AuthStack` vs `AppStack`. Never duplicate this guard logic in a Page or Component.
+- Any DTO going to `http.postForm` (OAuth2 endpoints) must match the field names the backend expects (commonly `username`/`password` for FastAPI's `OAuth2PasswordRequestForm`) — do not assume the DTO's own field names (e.g. `email`) match the wire format; map explicitly inside the Action if they differ.
+
+---
+
 ## CHECKLIST — Adding a new feature
 
 When asked to implement a new feature (e.g. "add comments"):
@@ -397,7 +520,7 @@ When asked to implement a new feature (e.g. "add comments"):
 1. **Model** — Create `src/Models/Comment.ts` with interface + class + `toJSON()`
 2. **DTOs** — Create one DTO per operation: `CreateCommentDTO`, `DeleteCommentDTO`, etc.
 3. **Events** — Add events to `src/Events/CommentEvents.ts` (or create the file)
-4. **Actions** — Create one Action class per operation: `CreateCommentAction`, `DeleteCommentAction`, etc.
+4. **Actions** — Create one Action class per operation: `CreateCommentAction`, `DeleteCommentAction`, etc. For any Action calling the backend, use `http` from `src/utils/http.ts` — never `fetch()` directly
 5. **Controller** — Create or update `src/Http/Controllers/useCommentController.ts`
 6. **Listener** — Add relevant event subscriptions to the appropriate Listener (e.g. `LogListener`)
 7. **Components** — Create UI components in `src/View/Components/`
@@ -408,16 +531,19 @@ When asked to implement a new feature (e.g. "add comments"):
 
 ## PROHIBITED PATTERNS
 
-| Pattern                                            | Reason                                         |
-| -------------------------------------------------- | ---------------------------------------------- |
-| Calling `fetch()` inside a Component or Controller | API calls belong in Actions                    |
-| Calling an Action inside a Component               | Actions are called from Controllers only       |
-| Using `useState` inside an Action                  | Actions are pure logic, no React               |
-| Creating a Model instance outside of an Action     | Model instantiation is Action responsibility   |
-| Emitting an event outside of an Action             | Events are emitted by Actions only             |
-| Having a Controller manage two unrelated domains   | One Controller per domain                      |
-| Skipping the DTO and passing raw data to an Action | Always type inputs with a DTO                  |
-| Adding business logic inside a page (`app/`)       | Pages only assemble Components and Controllers |
+| Pattern                                                  | Reason                                              |
+| --------------------------------------------------------- | ---------------------------------------------------- |
+| Calling `fetch()` anywhere outside `src/utils/http.ts`   | All network calls must go through the http client  |
+| Calling `fetch()` inside a Component or Controller       | API calls belong in Actions (via `http.ts`)         |
+| Calling an Action inside a Component                     | Actions are called from Controllers only            |
+| Using `useState` inside an Action                        | Actions are pure logic, no React                    |
+| Creating a Model instance outside of an Action            | Model instantiation is Action responsibility        |
+| Emitting an event outside of an Action                    | Events are emitted by Actions only                   |
+| Having a Controller manage two unrelated domains          | One Controller per domain                            |
+| Skipping the DTO and passing raw data to an Action        | Always type inputs with a DTO                        |
+| Adding business logic inside a page (`app/`)              | Pages only assemble Components and Controllers       |
+| Hardcoding a host/IP/URL inside an Action                 | Base URL is centralized in `app.config.js`/`http.ts` |
+| Reading the token directly from AsyncStorage in an Action | Always go through `getAccessToken()` in `storage.ts` |
 
 ---
 
@@ -429,6 +555,7 @@ When asked to implement a new feature (e.g. "add comments"):
 | Model interface | `[Name]Attributes`         | `TodoAttributes`             |
 | DTO             | `[Verb][Name]DTO.ts`       | `CreateTodoDTO.ts`           |
 | Action          | `[Verb][Name]Action.ts`    | `CreateTodoAction.ts`        |
+| Http client     | `src/utils/http.ts` (singleton, no per-domain file) | `http.get(...)`, `http.postForm(...)` |
 | Event file      | `[Domain]Events.ts`        | `TodoEvents.ts`              |
 | Event emitter   | `[domain]Emitter`          | `todoEmitter`, `authEmitter` |
 | Controller      | `use[Domain]Controller.ts` | `useTodoController.ts`       |

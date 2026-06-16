@@ -1,6 +1,8 @@
 // routes/app.routes.tsx
 import ConstellationListScreen from "@/app/ConstellationListScreen";
 import CreateConstellationScreen from "@/app/CreateConstellationScreen";
+import InviteMemberScreen from "@/app/InviteMemberScreen";
+import NotificationsScreen from "@/app/NotificationsScreen";
 import { useAuth } from "@/src/Contexts/AuthContexts";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import HomeScreen from "../app/HomeScreen";
@@ -15,6 +17,8 @@ export type RootStackParamList = {
   Register: undefined;
   CreateConstellation: undefined;
   ConstellationList: undefined;
+  Notifications: undefined;
+  InviteMember: { constellationId: string; constellationName: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -41,6 +45,8 @@ function AppStack() {
         name="CreateConstellation"
         component={CreateConstellationScreen}
       />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="InviteMember" component={InviteMemberScreen} />
     </Stack.Navigator>
   );
 }

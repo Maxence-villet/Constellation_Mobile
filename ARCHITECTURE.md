@@ -1,5 +1,4 @@
-# Architecture React Native — Documentation Humaine
-
+# Architecture React Native
 > Cette architecture s'inspire de **Laravel** pour structurer une application React Native de manière cohérente et prévisible. L'objectif est de réduire la permissivité de React Native en imposant des conventions claires.
 
 ---
@@ -26,7 +25,8 @@ projet/
     ├── Providers/              # Initialisation des services
     ├── Storage/                # Persistance locale par modèle
     ├── utils/
-    │   └── storage.ts          # Utilitaires AsyncStorage génériques
+    │   ├── storage.ts          # Utilitaires AsyncStorage génériques
+    │   └── http.ts             # Client API centralisé (fetch + auth + erreurs)
     └── View/
         └── Components/         # Composants UI réutilisables
 ```
@@ -333,7 +333,158 @@ export function AppRoutes() {
 **Rôle :** Gérer la persistance locale avec `AsyncStorage`.
 
 - `src/Storage/XxxStorage.ts` — Classe dédiée à un modèle (ex: `TodoStorage`)
-- `src/utils/storage.ts` — Fonctions utilitaires génériques (user session)
+- `src/utils/storage.ts` — Fonctions utilitaires génériques (token d'accès, session utilisateur)
+
+```ts
+// src/utils/storage.ts
+export async function storeAccessToken(token: string): Promise<void> { ... }
+export async function getAccessToken(): Promise<string | null> { ... }
+export async function storeUserData(user: User): Promise<void> { ... }
+export async function getUserData(): Promise<User | null> { ... }
+export async function clearUserData(): Promise<void> { ... }
+```
+
+**Règle :** Ce fichier ne contient que des accès AsyncStorage bruts. Aucun appel API, aucune logique métier — ça reste le rôle des Actions.
+
+---
+
+### 13. Http/utils — `src/utils/http.ts`
+
+**Rôle :** Centraliser **tous** les appels réseau vers le backend (FastAPI) dans un client unique. C'est le seul endroit du projet qui appelle `fetch()` directement.
+
+**Pourquoi :** Sans ce client, chaque Action réécrirait la gestion des headers, du token, du JSON et des erreurs HTTP — source d'incohérences. Avec `http.ts`, les Actions ne font qu'appeler `http.get/post/delete/postForm` et gérer le résultat.
+
+```ts
+// src/utils/http.ts
+import Constants from "expo-constants";
+import { getAccessToken } from "./storage";
+
+// BASE_URL contient déjà le schéma (http:// ou https://) + un slash final
+const BASE_URL =
+  (Constants.expoConfig?.extra?.apiUrl ?? "http://192.168.1.102:8000").replace(
+    /\/$/,
+    "",
+  ) + "/";
+
+async function getHeaders(auth = false): Promise<HeadersInit> {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (auth) {
+    const token = await getAccessToken();
+    if (token) headers["Authorization"] = token;
+  }
+  return headers;
+}
+
+export const http = {
+  get: async <T>(path: string, auth = true): Promise<T> => {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "GET",
+      headers: await getHeaders(auth),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail);
+    }
+    return res.json();
+  },
+
+  post: async <T>(body: unknown, path: string, auth = false): Promise<T> => {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: await getHeaders(auth),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail);
+    }
+    return res.json();
+  },
+
+  delete: async (path: string, auth = true): Promise<void> => {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "DELETE",
+      headers: await getHeaders(auth),
+    });
+    if (!res.ok) throw new Error("Delete failed");
+  },
+
+  // Endpoint spécifique OAuth2 (FastAPI) qui attend du x-www-form-urlencoded
+  postForm: async <T>(
+    body: Record<string, string>,
+    path: string,
+    auth = false,
+  ): Promise<T> => {
+    const formBody = new URLSearchParams();
+    Object.entries(body).forEach(([key, value]) =>
+      formBody.append(key, value),
+    );
+
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: await getHeaders(auth),
+      body: formBody.toString(),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail);
+    }
+    return res.json();
+  },
+};
+```
+
+**Règles :**
+
+- Seules les **Actions** importent et appellent `http`. Jamais un Controller, jamais un Component.
+- L'URL de base vient de `app.config.js` (`extra.apiUrl`), lui-même piloté par la variable d'environnement `API_URL`. Ne jamais hardcoder une IP/host dans une Action.
+- Le paramètre `auth` indique si le header `Authorization` doit être injecté à partir du token stocké (`getAccessToken()`).
+- En cas d'erreur HTTP (`!res.ok`), on lève une `Error` avec le message renvoyé par le backend (`error.detail`, convention FastAPI). C'est ce message qui remonte jusqu'au Controller / à l'UI.
+- `postForm` existe spécifiquement pour les endpoints OAuth2 de FastAPI (ex: `auth/login`) qui attendent un body `application/x-www-form-urlencoded` plutôt que du JSON.
+
+```ts
+// app.config.js
+export default {
+  extra: {
+    apiUrl: process.env.API_URL ?? "http://192.168.1.102:8000",
+  },
+};
+```
+
+---
+
+## Connexion au backend — Flux d'authentification
+
+L'authentification illustre comment toutes les couches s'articulent autour d'un appel API réel.
+
+```
+[LoginScreen]
+     │  appelle login(dto) du Context
+     ▼
+[useAuth() → AuthContext]
+     │  délègue à useAuthController
+     ▼
+[useAuthController]
+     │  instancie LoginUserAction, appelle execute(dto)
+     ▼
+[LoginUserAction]
+     │  http.postForm({ username, password }, "auth/login")
+     │  stocke le token (storeAccessToken)
+     │  émet AuthEvents.LOGIN_SUCCESS
+     ▼
+[authEmitter] ──► [useAuthController : handler LOGIN_SUCCESS]
+                       │  FetchCurrentUserAction.execute()
+                       │  storeUserData(user) + setUser(user)
+                       ▼
+                [AuthContext re-render] → app.routes.tsx bascule sur AppStack
+```
+
+**Points clés :**
+
+- `LoginUserAction` ne récupère pas directement les infos utilisateur : il se contente d'obtenir un token et d'émettre `LOGIN_SUCCESS`. C'est le **Controller** (`useAuthController`), abonné à l'event, qui déclenche la récupération du profil via une seconde Action (`FetchCurrentUserAction`). Ce découplage permet à d'autres Listeners de réagir au login (analytics, etc.) sans toucher au Controller.
+- `LogoutUserAction` vide le storage local (`clearUserData`) puis émet `AuthEvents.LOGOUT`, écouté par le même Controller pour réinitialiser le state `user`.
+- `routes/app.routes.tsx` lit `user` et `isLoading` depuis `useAuth()` et choisit entre `AuthStack` (Welcome/Login/Register) et `AppStack` (écrans protégés). Aucune logique de garde d'accès n'est dupliquée ailleurs : **toute** la protection des routes passe par ce seul point.
+- Le token est toujours lu via `getAccessToken()` (dans `http.ts`) — jamais stocké en mémoire dans un Context ou un state de Component.
 
 ---
 
@@ -369,6 +520,7 @@ export function AppRoutes() {
 | Model       | Structure + comportement de la donnée | ❌                        |
 | DTO         | Typage des données entrantes          | ❌                        |
 | Action      | Logique métier pure                   | ❌                        |
+| Http/utils  | Client API unique (fetch + erreurs)   | ❌                        |
 | Event       | Communication inter-couches           | ❌                        |
 | Controller  | Orchestration Action ↔ State React    | ✅                        |
 | Listener    | Effets de bord sur événements         | ❌                        |

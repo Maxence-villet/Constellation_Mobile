@@ -71,8 +71,23 @@ export default function ConstellationListScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.constName}>{item.name}</Text>
-            <Text style={styles.constDesc}>{item.description}</Text>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitleBlock}>
+                <Text style={styles.constName}>{item.name}</Text>
+                <Text style={styles.constDesc}>{item.description}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.inviteBtn}
+                onPress={() =>
+                  navigation.navigate("InviteMember", {
+                    constellationId: item.id,
+                    constellationName: item.name,
+                  })
+                }
+              >
+                <Text style={styles.inviteBtnText}>+ Inviter</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.members}>
               {item.members?.slice(0, 3).map((member) => (
                 <Text key={String(member.id)} style={styles.memberText}>
@@ -123,8 +138,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
+  cardTitleBlock: { flex: 1, marginRight: 8 },
   constName: { fontSize: 18, fontWeight: "600", color: "#0f172a" },
   constDesc: { fontSize: 14, color: "#475569", marginTop: 4 },
+  inviteBtn: {
+    backgroundColor: "#0d084d",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+  inviteBtnText: { color: "#fff", fontSize: 13, fontWeight: "600" },
   placeholder: { textAlign: "center", color: "#94a3b8", fontSize: 16 },
   centerContainer: {
     flex: 1,
@@ -134,7 +164,7 @@ const styles = StyleSheet.create({
   members: {
     flexDirection: "row",
     marginTop: 16,
-    gap: 8, // espace entre les cercles
+    gap: 8,
   },
   memberText: {
     backgroundColor: "#FF660070",

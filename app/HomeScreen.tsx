@@ -14,7 +14,16 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.welcome}>Bienvenue {user?.firstName} !</Text>
+      <TouchableOpacity
+        style={styles.notifButton}
+        onPress={() => navigation.navigate("Notifications")}
+      >
+        <Text style={styles.notifIcon}>🔔</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.welcome}>
+        Bienvenue {user?.pseudo}#{user?.code} !
+      </Text>
 
       <TouchableOpacity
         style={styles.constellationsButton}
@@ -36,6 +45,20 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#fff",
   },
+  notifButton: {
+    position: "absolute",
+    top: 60,
+    right: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notifIcon: { fontSize: 20 },
   welcome: {
     fontSize: 28,
     fontWeight: "700",
