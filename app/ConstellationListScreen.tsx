@@ -2,6 +2,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useCallback } from "react";
 import {
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -11,11 +12,19 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RootStackParamList } from "../routes/app.routes";
 import { useConstellationController } from "../src/Http/Controllers/useConstellationController";
+import { useMemberController } from "../src/Http/Controllers/useMemberController";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+/** Rôles autorisés à inviter d'autres membres */
+const CAN_INVITE_ROLES = ["Sirius", "Soleil"];
+
+/** Rôles autorisés à quitter (tous sauf le propriétaire Sirius) */
+const CAN_LEAVE_ROLES = ["Soleil", "Etoile"];
+
 export default function ConstellationListScreen() {
   const { constellations, isLoading, refresh } = useConstellationController();
+  const { leaveConstellation } = useMemberController();
   const navigation = useNavigation<NavigationProp>();
 
   useFocusEffect(
@@ -23,6 +32,31 @@ export default function ConstellationListScreen() {
       refresh();
     }, []),
   );
+
+  const handleLeave = (constellationId: string, constellationName: string) => {
+    Alert.alert(
+      "Quitter la constellation",
+      `Êtes-vous sûr de vouloir quitter "${constellationName}" ?`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Quitter",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await leaveConstellation(constellationId);
+              await refresh();
+            } catch (err: any) {
+              Alert.alert(
+                "Erreur",
+                err.message ?? "Impossible de quitter la constellation.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
 
   if (isLoading) {
     return (
@@ -69,34 +103,62 @@ export default function ConstellationListScreen() {
         keyExtractor={(item, index) =>
           item?.id ? String(item.id) : `fallback-${index}`
         }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardTitleBlock}>
-                <Text style={styles.constName}>{item.name}</Text>
-                <Text style={styles.constDesc}>{item.description}</Text>
+        renderItem={({ item }) => {
+          // Trouver le membre correspondant à l'utilisateur courant
+          const myMember = (item.members as any[])?.find(
+            (m) => m.user?.isCurrentUser === true,
+          );
+          const myRole: string | undefined = myMember?.role;
+          const canInvite = myRole ? CAN_INVITE_ROLES.includes(myRole) : false;
+          const canLeave = myRole ? CAN_LEAVE_ROLES.includes(myRole) : false;
+
+          return (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleBlock}>
+                  <Text style={styles.constName}>{item.name}</Text>
+                  <Text style={styles.constDesc}>{item.description}</Text>
+                </View>
+
+                <View style={styles.cardActions}>
+                  {canInvite && (
+                    <TouchableOpacity
+                      style={styles.inviteBtn}
+                      onPress={() =>
+                        navigation.navigate("InviteMember", {
+                          constellationId: item.id,
+                          constellationName: item.name,
+                        })
+                      }
+                    >
+                      <Text style={styles.inviteBtnText}>+ Inviter</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {canLeave && (
+                    <TouchableOpacity
+                      style={styles.leaveBtn}
+                      onPress={() => handleLeave(item.id, item.name)}
+                    >
+                      <Text style={styles.leaveBtnText}>Quitter</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-              <TouchableOpacity
-                style={styles.inviteBtn}
-                onPress={() =>
-                  navigation.navigate("InviteMember", {
-                    constellationId: item.id,
-                    constellationName: item.name,
-                  })
-                }
-              >
-                <Text style={styles.inviteBtnText}>+ Inviter</Text>
-              </TouchableOpacity>
+
+              <View style={styles.members}>
+                {(item.members as any[])?.slice(0, 3).map((member, idx) => (
+                  <Text
+                    key={member.id ? String(member.id) : `m-${idx}`}
+                    style={styles.memberText}
+                  >
+                    {member.user?.firstName?.charAt(0)?.toUpperCase() ?? "?"}
+                  </Text>
+                ))}
+              </View>
             </View>
-            <View style={styles.members}>
-              {item.members?.slice(0, 3).map((member) => (
-                <Text key={String(member.id)} style={styles.memberText}>
-                  {member.user.firstName?.charAt(0) ?? "?"}
-                </Text>
-              ))}
-            </View>
-          </View>
-        )}
+          );
+        }}
         refreshing={isLoading}
         onRefresh={refresh}
       />
@@ -147,14 +209,26 @@ const styles = StyleSheet.create({
   cardTitleBlock: { flex: 1, marginRight: 8 },
   constName: { fontSize: 18, fontWeight: "600", color: "#0f172a" },
   constDesc: { fontSize: 14, color: "#475569", marginTop: 4 },
+  cardActions: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 6,
+  },
   inviteBtn: {
     backgroundColor: "#0d084d",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
-    alignSelf: "flex-start",
   },
   inviteBtnText: { color: "#fff", fontSize: 13, fontWeight: "600" },
+  leaveBtn: {
+    borderWidth: 1,
+    borderColor: "#ef4444",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  leaveBtnText: { color: "#ef4444", fontSize: 13, fontWeight: "600" },
   placeholder: { textAlign: "center", color: "#94a3b8", fontSize: 16 },
   centerContainer: {
     flex: 1,

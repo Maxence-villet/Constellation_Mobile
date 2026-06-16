@@ -4,6 +4,7 @@ import { AcceptInvitationAction } from "@/src/Actions/AcceptInvitationAction";
 import { DeclineInvitationAction } from "@/src/Actions/DeclineInvitationAction";
 import { FetchInvitationsAction } from "@/src/Actions/FetchInvitationsAction";
 import { InviteMemberAction } from "@/src/Actions/InviteMemberAction";
+import { LeaveConstellationAction } from "@/src/Actions/LeaveConstellationAction";
 import { SendInvitationDTO } from "@/src/DTOs/SendInvitationDTO";
 import { Invitation } from "@/src/Models/Invitation";
 
@@ -39,6 +40,11 @@ export function useMemberController() {
     await loadInvitations();
   };
 
+  const leaveConstellation = async (constellationId: string): Promise<void> => {
+    const action = new LeaveConstellationAction();
+    await action.execute(constellationId);
+  };
+
   const declineInvitation = async (memberId: string): Promise<void> => {
     const action = new DeclineInvitationAction();
     await action.execute(memberId);
@@ -50,6 +56,7 @@ export function useMemberController() {
     isLoadingInvitations,
     loadInvitations,
     inviteMember,
+    leaveConstellation,
     acceptInvitation,
     declineInvitation,
   };

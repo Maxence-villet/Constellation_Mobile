@@ -8,6 +8,7 @@ export interface UserAttributes {
   pseudo: string;
   token?: string;
   subscription: string;
+  isCurrentUser?: boolean;
 }
 
 export class User {
@@ -19,6 +20,7 @@ export class User {
   public pseudo: string;
   public token?: string;
   public subscription: string;
+  public isCurrentUser?: boolean;
 
   constructor(attributes: UserAttributes) {
     this.id = attributes.id;
@@ -29,6 +31,7 @@ export class User {
     this.pseudo = attributes.pseudo;
     this.token = attributes.token;
     this.subscription = attributes.subscription;
+    this.isCurrentUser = attributes.isCurrentUser;
   }
 
   get fullName(): string {
@@ -45,6 +48,7 @@ export class User {
       pseudo: this.pseudo,
       token: this.token,
       subscription: this.subscription,
+      isCurrentUser: this.isCurrentUser,
     };
   }
 }
