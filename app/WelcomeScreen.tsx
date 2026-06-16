@@ -13,12 +13,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RootStackParamList } from "../routes/app.routes";
+import { AuthStackParamList } from "../routes/app.routes";
 import ButtonPrimary from "./components/ui/button";
 import ButtonSecondary from "./components/ui/button secondary";
 import { Colors } from "./constants/colors";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 export default function WelcomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -61,7 +61,7 @@ export default function WelcomeScreen() {
             resizeMode="contain"
           />
           <Text style={styles.tagline}>
-            METTEZ DE L'ORDRE DANS VOTRE UNIVERS
+            METTEZ DE L’ORDRE DANS VOTRE UNIVERS
           </Text>
         </View>
 

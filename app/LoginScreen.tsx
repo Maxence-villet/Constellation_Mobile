@@ -14,11 +14,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RootStackParamList } from "../routes/app.routes";
+import { AuthStackParamList } from "../routes/app.routes";
 import { useAuth } from "../src/Contexts/AuthContexts";
 import { LoginUserDTO } from "../src/DTOs/LoginUserDTO";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 export default function LoginScreen() {
   const { login } = useAuth();

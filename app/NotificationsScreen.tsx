@@ -10,11 +10,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RootStackParamList } from "../routes/app.routes";
+import { HomeStackParamList } from "../routes/app.routes";
 import { useMemberController } from "../src/Http/Controllers/useMemberController";
 import { InvitationCard } from "../src/View/Components/InvitationCard";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 
 export default function NotificationsScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -26,15 +26,12 @@ export default function NotificationsScreen() {
     declineInvitation,
   } = useMemberController();
 
-  // Stocke la référence de loadInvitations pour éviter d'inscrire de multiples listeners s'il change
   const loadInvitationsRef = useRef(loadInvitations);
   loadInvitationsRef.current = loadInvitations;
 
   useEffect(() => {
-    // Premier chargement au montage
     loadInvitationsRef.current();
 
-    // Re-chargement lorsque l'écran redevient actif
     const unsubscribe = navigation.addListener("focus", () => {
       loadInvitationsRef.current();
     });

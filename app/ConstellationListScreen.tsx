@@ -10,11 +10,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RootStackParamList } from "../routes/app.routes";
+import { ConstellationsStackParamList } from "../routes/app.routes";
 import { useConstellationController } from "../src/Http/Controllers/useConstellationController";
 import { useMemberController } from "../src/Http/Controllers/useMemberController";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<ConstellationsStackParamList>;
 
 /** Rôles autorisés à inviter d'autres membres */
 const CAN_INVITE_ROLES = ["Sirius", "Soleil"];
@@ -115,10 +115,21 @@ export default function ConstellationListScreen() {
           return (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <View style={styles.cardTitleBlock}>
+                <TouchableOpacity
+                  style={styles.cardTitleBlock}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    navigation.navigate("ConstellationDetail", {
+                      constellationId: item.id,
+                      constellationName: item.name,
+                      constellationDescription: item.description ?? "",
+                      members: item.members as any[],
+                    })
+                  }
+                >
                   <Text style={styles.constName}>{item.name}</Text>
                   <Text style={styles.constDesc}>{item.description}</Text>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.cardActions}>
                   {canInvite && (
@@ -146,7 +157,18 @@ export default function ConstellationListScreen() {
                 </View>
               </View>
 
-              <View style={styles.members}>
+              <TouchableOpacity
+                style={styles.members}
+                activeOpacity={0.7}
+                onPress={() =>
+                  navigation.navigate("ConstellationDetail", {
+                    constellationId: item.id,
+                    constellationName: item.name,
+                    constellationDescription: item.description ?? "",
+                    members: item.members as any[],
+                  })
+                }
+              >
                 {(item.members as any[])?.slice(0, 3).map((member, idx) => (
                   <Text
                     key={member.id ? String(member.id) : `m-${idx}`}
@@ -155,7 +177,7 @@ export default function ConstellationListScreen() {
                     {member.user?.firstName?.charAt(0)?.toUpperCase() ?? "?"}
                   </Text>
                 ))}
-              </View>
+              </TouchableOpacity>
             </View>
           );
         }}

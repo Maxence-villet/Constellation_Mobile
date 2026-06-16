@@ -16,12 +16,15 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RootStackParamList } from "../routes/app.routes";
+import { ConstellationsStackParamList } from "../routes/app.routes";
 import { MemberRole } from "../src/DTOs/SendInvitationDTO";
 import { useMemberController } from "../src/Http/Controllers/useMemberController";
 
-type Props = NativeStackScreenProps<RootStackParamList, "InviteMember">;
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type Props = NativeStackScreenProps<
+  ConstellationsStackParamList,
+  "InviteMember"
+>;
+type NavigationProp = NativeStackNavigationProp<ConstellationsStackParamList>;
 
 const ROLES: { value: MemberRole; label: string; description: string }[] = [
   {
