@@ -3,6 +3,7 @@ import { useState } from "react";
 import { AcceptInvitationAction } from "@/src/Actions/AcceptInvitationAction";
 import { DeclineInvitationAction } from "@/src/Actions/DeclineInvitationAction";
 import { FetchInvitationsAction } from "@/src/Actions/FetchInvitationsAction";
+import { ExcludeMemberAction } from "@/src/Actions/ExcludeMemberAction";
 import { InviteMemberAction } from "@/src/Actions/InviteMemberAction";
 import { LeaveConstellationAction } from "@/src/Actions/LeaveConstellationAction";
 import { SendInvitationDTO } from "@/src/DTOs/SendInvitationDTO";
@@ -18,7 +19,7 @@ export function useMemberController() {
       const action = new FetchInvitationsAction();
       const data = await action.execute();
       setInvitations(data);
-    } catch (error: any) {
+    } catch {
       // On ignore silencieusement les erreurs de chargement (ex: 404 si aucune invitation trouvée)
       setInvitations([]);
     } finally {
@@ -40,6 +41,11 @@ export function useMemberController() {
     await loadInvitations();
   };
 
+  const excludeMember = async (memberId: string): Promise<void> => {
+    const action = new ExcludeMemberAction();
+    await action.execute(memberId);
+  };
+
   const leaveConstellation = async (constellationId: string): Promise<void> => {
     const action = new LeaveConstellationAction();
     await action.execute(constellationId);
@@ -56,6 +62,7 @@ export function useMemberController() {
     isLoadingInvitations,
     loadInvitations,
     inviteMember,
+    excludeMember,
     leaveConstellation,
     acceptInvitation,
     declineInvitation,

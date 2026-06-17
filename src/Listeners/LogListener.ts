@@ -18,7 +18,7 @@ export class LogListener {
       console.log(`[LogListener] Todo deleted: ${todo.title}`);
     });
 
-    authEmitter.on(AuthEvents.LOGGIN_SUCCESS, (user) => {
+    authEmitter.on(AuthEvents.LOGIN_SUCCESS, (user) => {
       console.log(`[LogListener] User logged: ${user.email}`);
     });
 

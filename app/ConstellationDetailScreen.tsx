@@ -3,8 +3,10 @@ import {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
 import {
+  Alert,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -14,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ConstellationsStackParamList } from "../routes/app.routes";
+import { useMemberController } from "../src/Http/Controllers/useMemberController";
 
 type Props = NativeStackScreenProps<
   ConstellationsStackParamList,
@@ -121,7 +124,44 @@ function getPriorityColor(priority: FakeTask["priority"]): string {
 export default function ConstellationDetailScreen({ route }: Props) {
   const navigation =
     useNavigation<NativeStackNavigationProp<ConstellationsStackParamList>>();
-  const { constellationName, constellationDescription, members } = route.params;
+  const { constellationName, constellationDescription } = route.params;
+
+  // Etat local des membres pour refléter les exclusions sans rechargement
+  const [members, setMembers] = useState<any[]>(route.params.members ?? []);
+
+  const { excludeMember } = useMemberController();
+
+  // Détermine si l'utilisateur courant est le propriétaire (Sirius)
+  const currentUserIsSirius =
+    members.find((m: any) => m.user?.isCurrentUser === true)?.role === "Sirius";
+
+  const handleExclude = (memberId: string, pseudo: string) => {
+    Alert.alert(
+      "Exclure le membre",
+      `Voulez-vous exclure ${pseudo} de la constellation ?`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Exclure",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await excludeMember(memberId);
+              // Mise à jour locale : retire le membre exclu de la liste
+              setMembers((prev: any[]) =>
+                prev.filter((m: any) => m.id !== memberId),
+              );
+            } catch (err: any) {
+              Alert.alert(
+                "Erreur",
+                err.message ?? "Impossible d'exclure ce membre.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -147,6 +187,7 @@ export default function ConstellationDetailScreen({ route }: Props) {
           <Text style={styles.description}>{constellationDescription}</Text>
         ) : null}
 
+        {/* Section Membres */}
         <Text style={styles.sectionTitle}>Membres</Text>
         <FlatList
           data={members}
@@ -162,23 +203,42 @@ export default function ConstellationDetailScreen({ route }: Props) {
             const pseudo: string = item?.user?.pseudo ?? "";
             const isCurrentUser: boolean = item?.user?.isCurrentUser === true;
             const role: string = item?.role ?? "";
+            const memberId: string = item?.id ?? "";
             const initial = firstName.charAt(0).toUpperCase() || "?";
             const avatarBg = AVATAR_COLORS[index % AVATAR_COLORS.length];
             const avatarText =
               AVATAR_TEXT_COLORS[index % AVATAR_TEXT_COLORS.length];
 
+            // Affiche le bouton d'exclusion si :
+            // - l'utilisateur courant est Sirius (propriétaire)
+            // - ET le membre n'est pas l'utilisateur courant lui-même
+            const showExcludeBtn = currentUserIsSirius && !isCurrentUser;
+
             return (
               <View style={styles.memberCard}>
+                {/* Bouton d'exclusion */}
+                {showExcludeBtn && (
+                  <TouchableOpacity
+                    style={styles.excludeBtn}
+                    onPress={() => handleExclude(memberId, pseudo || firstName)}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Ionicons name="trash" size={13} color="#ef4444" />
+                  </TouchableOpacity>
+                )}
+
                 <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
                   <Text style={[styles.avatarText, { color: avatarText }]}>
                     {initial}
                   </Text>
                 </View>
+
                 {isCurrentUser && (
                   <View style={styles.youBadge}>
                     <Text style={styles.youBadgeText}>Vous</Text>
                   </View>
                 )}
+
                 <Text style={styles.memberPseudo} numberOfLines={1}>
                   {pseudo || firstName}
                 </Text>
@@ -191,6 +251,7 @@ export default function ConstellationDetailScreen({ route }: Props) {
           }}
         />
 
+        {/* Section Taches */}
         <Text style={styles.sectionTitle}>Taches en cours</Text>
         {FAKE_TASKS.map((task) => {
           const statusStyle = getStatusStyle(task.status);
@@ -293,6 +354,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: 110,
   },
+  excludeBtn: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#fef2f2",
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
+
   avatar: {
     width: 48,
     height: 48,
