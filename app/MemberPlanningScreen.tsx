@@ -42,8 +42,8 @@ export default function MemberPlanningScreen({ route }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memberId]);
 
-  // Seul le créateur peut supprimer ou modifier son rendez-vous
-  const canManage = (appointment: Appointment) =>
+  // Seul le créateur peut modifier son rendez-vous
+  const isCreator = (appointment: Appointment) =>
     appointment.created_by_user_id === user?.id;
 
   const handleEdit = (appointment: Appointment) => {
@@ -59,7 +59,7 @@ export default function MemberPlanningScreen({ route }: Props) {
   const handleDelete = (appointment: Appointment) => {
     Alert.alert(
       "Supprimer le rendez-vous",
-      `Voulez-vous supprimer "${appointment.title}" ?`,
+      `Voulez-vous supprimer "${appointment.title}" du planning de ${memberName} ?\n\nExemple : rendez-vous annulé.`,
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -114,8 +114,8 @@ export default function MemberPlanningScreen({ route }: Props) {
               appointment={item}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              canDelete={canManage(item)}
-              canEdit={canManage(item)}
+              canDelete={true} // tout membre peut supprimer
+              canEdit={isCreator(item)} // seul le créateur peut modifier
             />
           )}
           ListEmptyComponent={

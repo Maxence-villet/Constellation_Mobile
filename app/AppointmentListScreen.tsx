@@ -49,7 +49,7 @@ export default function AppointmentListScreen({ route }: Props) {
   const handleDelete = (appointment: Appointment) => {
     Alert.alert(
       "Supprimer le rendez-vous",
-      `Voulez-vous supprimer "${appointment.title}" ?`,
+      `Voulez-vous supprimer "${appointment.title}" ?\n\nExémple : rendez-vous annulé.`,
       [
         { text: "Annuler", style: "cancel" },
         {
