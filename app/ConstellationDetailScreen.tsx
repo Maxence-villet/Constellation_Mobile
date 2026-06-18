@@ -78,7 +78,8 @@ export default function ConstellationDetailScreen({ route }: Props) {
   const [todoToEclipse, setTodoToEclipse] = useState<Todo | null>(null);
 
   const { excludeMember } = useMemberController();
-  const { todos, remove, assign, eclipse } = useTodoController();
+  const { todos, remove, assign, eclipse, submit, validate } =
+    useTodoController();
 
   // ID du membre courant (pour détecter les tâches qui m'appartiennent)
   const currentMemberId =
@@ -112,6 +113,52 @@ export default function ConstellationDetailScreen({ route }: Props) {
     firstName: m.user?.firstName ?? "",
     lastName: m.user?.lastName ?? "",
   }));
+
+  const handleSubmitTask = (todo: Todo) => {
+    Alert.alert(
+      "Marquer comme terminée",
+      `Soumettre "${todo.title}" à la validation ?`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Confirmer",
+          onPress: async () => {
+            try {
+              await submit(todo);
+            } catch (err: any) {
+              Alert.alert(
+                "Erreur",
+                err.message ?? "Impossible de soumettre la tâche.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleValidateTask = (todo: Todo) => {
+    Alert.alert(
+      "Valider la tâche",
+      `Confirmer que "${todo.title}" est réalisée avec succès ?`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Valider ✅",
+          onPress: async () => {
+            try {
+              await validate(todo);
+            } catch (err: any) {
+              Alert.alert(
+                "Erreur",
+                err.message ?? "Impossible de valider la tâche.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleEclipsePress = (todo: Todo) => {
     setTodoToEclipse(todo);
@@ -302,9 +349,23 @@ export default function ConstellationDetailScreen({ route }: Props) {
           </Text>
         )}
         {todos.map((todo) => {
-          const statusStyle = todo.completed
-            ? { bg: "#f0fdf4", text: "#16a34a", label: "Terminée" }
-            : { bg: "#f1f5f9", text: "#94a3b8", label: "À faire" };
+          // Statut ternaire : todo → pending → validated
+          const statusStyle =
+            todo.status === "validated"
+              ? { bg: "#f0fdf4", text: "#16a34a", label: "Validée" }
+              : todo.status === "pending"
+                ? { bg: "#fff7ed", text: "#f97316", label: "En attente" }
+                : { bg: "#f1f5f9", text: "#94a3b8", label: "À faire" };
+
+          // Peut soumettre : je suis l'assigné ET statut à faire
+          const canSubmit =
+            todo.assigned_to === currentMemberId && todo.status === "todo";
+
+          // Peut valider : je suis le donneur (assigned_by) OU Sirius
+          // ET statut en attente
+          const canValidate =
+            (todo.assigned_by === currentMemberId || currentUserIsSirius) &&
+            todo.status === "pending";
           return (
             <View key={todo.id} style={styles.taskCard}>
               <View style={styles.taskHeader}>
@@ -376,6 +437,36 @@ export default function ConstellationDetailScreen({ route }: Props) {
                   >
                     <Text style={styles.eclipseBtnIcon}>🌑</Text>
                     <Text style={styles.eclipseBtnText}>Éclipser</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Marquer comme terminée — assigné, statut todo */}
+                {canSubmit && (
+                  <TouchableOpacity
+                    style={styles.submitBtn}
+                    onPress={() => handleSubmitTask(todo)}
+                  >
+                    <Ionicons
+                      name="checkmark-outline"
+                      size={14}
+                      color="#f97316"
+                    />
+                    <Text style={styles.submitBtnText}>Terminée</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Valider — donneur ou Sirius, statut pending */}
+                {canValidate && (
+                  <TouchableOpacity
+                    style={styles.validateBtn}
+                    onPress={() => handleValidateTask(todo)}
+                  >
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={14}
+                      color="#16a34a"
+                    />
+                    <Text style={styles.validateBtnText}>Valider</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -670,5 +761,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#8b5cf6",
+  },
+  submitBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: "#fff7ed",
+    borderWidth: 1,
+    borderColor: "#fed7aa",
+  },
+  submitBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#f97316",
+  },
+  validateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: "#f0fdf4",
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+  },
+  validateBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#16a34a",
   },
 });

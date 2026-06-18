@@ -5,7 +5,9 @@ import { AssignTodoAction } from "../../Actions/AssignTodoAction";
 import { CreateEclipseAction } from "../../Actions/CreateEclipseAction";
 import { CreateTodoAction } from "../../Actions/CreateTodoAction";
 import { DeleteTodoAction } from "../../Actions/DeleteTodoAction";
+import { SubmitTodoAction } from "../../Actions/SubmitTodoAction";
 import { ToggleTodoAction } from "../../Actions/ToggleTodoAction";
+import { ValidateTodoAction } from "../../Actions/ValidateTodoAction";
 import { AssignTodoDTO } from "../../DTOs/AssignTodoDTO";
 import { CreateEclipseDTO } from "../../DTOs/CreateEclipseDTO";
 import { CreateTodoDTO } from "../../DTOs/CreateTodoDTO";
@@ -59,5 +61,23 @@ export function useTodoController() {
     );
   };
 
-  return { todos, add, toggle, remove, assign, eclipse };
+  // Assigné → marque la tâche comme terminée (statut pending)
+  const submit = async (todo: Todo): Promise<void> => {
+    const action = new SubmitTodoAction();
+    const updated = await action.execute(todo);
+    setTodos((prev: Todo[]) =>
+      prev.map((t: Todo) => (t.id === updated.id ? updated : t)),
+    );
+  };
+
+  // Donneur ou Sirius → valide la tâche (statut validated)
+  const validate = async (todo: Todo): Promise<void> => {
+    const action = new ValidateTodoAction();
+    const updated = await action.execute(todo);
+    setTodos((prev: Todo[]) =>
+      prev.map((t: Todo) => (t.id === updated.id ? updated : t)),
+    );
+  };
+
+  return { todos, add, toggle, remove, assign, eclipse, submit, validate };
 }

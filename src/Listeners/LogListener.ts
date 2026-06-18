@@ -29,6 +29,14 @@ export class LogListener {
       );
     });
 
+    emitter.on(TodoEvents.TODO_SUBMITTED, (todo) => {
+      console.log(`[LogListener] Todo submitted (pending): ${todo.title}`);
+    });
+
+    emitter.on(TodoEvents.TODO_VALIDATED, (todo) => {
+      console.log(`[LogListener] Todo validated: ${todo.title}`);
+    });
+
     eclipseEmitter.on(EclipseEvents.ECLIPSE_CREATED, (eclipse) => {
       console.log(
         `[LogListener] Eclipse created: ${eclipse.todoTitle}` +
