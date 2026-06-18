@@ -4,6 +4,7 @@ import {
   appointmentEmitter,
   AppointmentEvents,
 } from "../Events/AppointmentEvents";
+import { eclipseEmitter, EclipseEvents } from "../Events/EclipseEvents";
 import { emitter, TodoEvents } from "../Events/TodoEvents";
 
 export class LogListener {
@@ -25,6 +26,13 @@ export class LogListener {
     emitter.on(TodoEvents.TODO_ASSIGNED, (todo) => {
       console.log(
         `[LogListener] Todo assigned: ${todo.title} → member ${todo.assigned_to}`,
+      );
+    });
+
+    eclipseEmitter.on(EclipseEvents.ECLIPSE_CREATED, (eclipse) => {
+      console.log(
+        `[LogListener] Eclipse created: ${eclipse.todoTitle}` +
+          ` (${eclipse.fromMemberId} → ${eclipse.toMemberId})`,
       );
     });
 

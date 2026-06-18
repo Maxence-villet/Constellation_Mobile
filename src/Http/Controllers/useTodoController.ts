@@ -2,10 +2,12 @@
 import { FetchTodosAction } from "@/src/Actions/FetchTodosAction";
 import { useEffect, useState } from "react";
 import { AssignTodoAction } from "../../Actions/AssignTodoAction";
+import { CreateEclipseAction } from "../../Actions/CreateEclipseAction";
 import { CreateTodoAction } from "../../Actions/CreateTodoAction";
 import { DeleteTodoAction } from "../../Actions/DeleteTodoAction";
 import { ToggleTodoAction } from "../../Actions/ToggleTodoAction";
 import { AssignTodoDTO } from "../../DTOs/AssignTodoDTO";
+import { CreateEclipseDTO } from "../../DTOs/CreateEclipseDTO";
 import { CreateTodoDTO } from "../../DTOs/CreateTodoDTO";
 import { Todo } from "../../Models/Todo";
 
@@ -49,5 +51,13 @@ export function useTodoController() {
     );
   };
 
-  return { todos, add, toggle, remove, assign };
+  const eclipse = async (dto: CreateEclipseDTO): Promise<void> => {
+    const action = new CreateEclipseAction();
+    const updatedTodo = await action.execute(dto);
+    setTodos((prev: Todo[]) =>
+      prev.map((t: Todo) => (t.id === updatedTodo.id ? updatedTodo : t)),
+    );
+  };
+
+  return { todos, add, toggle, remove, assign, eclipse };
 }

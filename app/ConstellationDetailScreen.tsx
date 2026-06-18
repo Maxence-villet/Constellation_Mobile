@@ -21,7 +21,11 @@ import { useTodoController } from "../src/Http/Controllers/useTodoController";
 import AssignMemberModal, {
   MemberOption,
 } from "../src/View/Components/AssignMemberModal";
+import EclipseModal, {
+  EclipseMemberOption,
+} from "../src/View/Components/EclipseModal";
 import { AssignTodoDTO } from "../src/DTOs/AssignTodoDTO";
+import { CreateEclipseDTO } from "../src/DTOs/CreateEclipseDTO";
 import { Todo } from "../src/Models/Todo";
 
 type Props = NativeStackScreenProps<
@@ -69,12 +73,37 @@ export default function ConstellationDetailScreen({ route }: Props) {
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [todoToAssign, setTodoToAssign] = useState<Todo | null>(null);
 
+  // État du modal Éclipse
+  const [eclipseModalVisible, setEclipseModalVisible] = useState(false);
+  const [todoToEclipse, setTodoToEclipse] = useState<Todo | null>(null);
+
   const { excludeMember } = useMemberController();
-  const { todos, remove, assign } = useTodoController();
+  const { todos, remove, assign, eclipse } = useTodoController();
+
+  // ID du membre courant (pour détecter les tâches qui m'appartiennent)
+  const currentMemberId =
+    members.find((m: any) => m.user?.isCurrentUser === true)?.id ?? null;
 
   // Détermine si l'utilisateur courant est le propriétaire (Sirius)
   const currentUserIsSirius =
     members.find((m: any) => m.user?.isCurrentUser === true)?.role === "Sirius";
+
+  // Membres Étoile (hors utilisateur courant) pour l'Éclipse
+  const etoileMembers: EclipseMemberOption[] = members
+    .filter((m: any) => m.role === "Etoile" && !m.user?.isCurrentUser)
+    .map((m: any) => ({
+      id: m.id,
+      pseudo: m.user?.pseudo ?? "",
+      firstName: m.user?.firstName ?? "",
+      lastName: m.user?.lastName ?? "",
+    }));
+
+  const allMembersForEclipse: EclipseMemberOption[] = members.map((m: any) => ({
+    id: m.id,
+    pseudo: m.user?.pseudo ?? "",
+    firstName: m.user?.firstName ?? "",
+    lastName: m.user?.lastName ?? "",
+  }));
 
   // Membres de la constellation pour le sélecteur d'attribution
   const memberOptions: MemberOption[] = members.map((m: any) => ({
@@ -83,6 +112,27 @@ export default function ConstellationDetailScreen({ route }: Props) {
     firstName: m.user?.firstName ?? "",
     lastName: m.user?.lastName ?? "",
   }));
+
+  const handleEclipsePress = (todo: Todo) => {
+    setTodoToEclipse(todo);
+    setEclipseModalVisible(true);
+  };
+
+  const handleEclipseConfirm = async (toMemberId: string) => {
+    if (!todoToEclipse) return;
+    setEclipseModalVisible(false);
+    const dto: CreateEclipseDTO = { todoId: todoToEclipse.id, toMemberId };
+    setTodoToEclipse(null);
+    try {
+      await eclipse(dto);
+      Alert.alert(
+        "🌑 Éclipse créée",
+        "La tâche a été déléguée. L'Étoile réceptrice a reçu une notification.",
+      );
+    } catch (err: any) {
+      Alert.alert("Erreur", err.message ?? "Impossible de créer l'Éclipse.");
+    }
+  };
 
   const handleAssignPress = (todo: Todo) => {
     setTodoToAssign(todo);
@@ -302,16 +352,33 @@ export default function ConstellationDetailScreen({ route }: Props) {
                   ) : null;
                 })()}
 
-              {/* Bouton Attribuer */}
-              <TouchableOpacity
-                style={styles.assignBtn}
-                onPress={() => handleAssignPress(todo)}
-              >
-                <Ionicons name="person-add-outline" size={14} color="#0d084d" />
-                <Text style={styles.assignBtnText}>
-                  {todo.assigned_to ? "Réattribuer" : "Attribuer"}
-                </Text>
-              </TouchableOpacity>
+              {/* Boutons Attribuer + Éclipser */}
+              <View style={styles.taskActions}>
+                <TouchableOpacity
+                  style={styles.assignBtn}
+                  onPress={() => handleAssignPress(todo)}
+                >
+                  <Ionicons
+                    name="person-add-outline"
+                    size={14}
+                    color="#0d084d"
+                  />
+                  <Text style={styles.assignBtnText}>
+                    {todo.assigned_to ? "Réattribuer" : "Attribuer"}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Bouton Éclipse — visible si la tâche m'est attribuée */}
+                {todo.assigned_to === currentMemberId && (
+                  <TouchableOpacity
+                    style={styles.eclipseBtn}
+                    onPress={() => handleEclipsePress(todo)}
+                  >
+                    <Text style={styles.eclipseBtnIcon}>🌑</Text>
+                    <Text style={styles.eclipseBtnText}>Éclipser</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           );
         })}
@@ -333,7 +400,7 @@ export default function ConstellationDetailScreen({ route }: Props) {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Modal de sélection du membre */}
+      {/* Modal d'attribution */}
       <AssignMemberModal
         visible={assignModalVisible}
         taskTitle={todoToAssign?.title ?? ""}
@@ -342,6 +409,20 @@ export default function ConstellationDetailScreen({ route }: Props) {
         onClose={() => {
           setAssignModalVisible(false);
           setTodoToAssign(null);
+        }}
+      />
+
+      {/* Modal Éclipse */}
+      <EclipseModal
+        visible={eclipseModalVisible}
+        todoTitle={todoToEclipse?.title ?? ""}
+        etoileMembers={etoileMembers}
+        allMembers={allMembersForEclipse}
+        eclipseHistory={todoToEclipse?.eclipse_history ?? []}
+        onConfirm={handleEclipseConfirm}
+        onClose={() => {
+          setEclipseModalVisible(false);
+          setTodoToEclipse(null);
         }}
       />
     </SafeAreaView>
@@ -564,5 +645,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#0d084d",
+  },
+  taskActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+    flexWrap: "wrap",
+  },
+  eclipseBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: "#8b5cf615",
+    borderWidth: 1,
+    borderColor: "#8b5cf630",
+  },
+  eclipseBtnIcon: {
+    fontSize: 13,
+  },
+  eclipseBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#8b5cf6",
   },
 });
