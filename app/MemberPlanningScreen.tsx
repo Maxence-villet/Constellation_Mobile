@@ -59,7 +59,7 @@ export default function MemberPlanningScreen({ route }: Props) {
   const handleDelete = (appointment: Appointment) => {
     Alert.alert(
       "Supprimer le rendez-vous",
-      `Voulez-vous supprimer "${appointment.title}" du planning de ${memberName} ?\n\nExemple : rendez-vous annulé.`,
+      `Voulez-vous supprimer "${appointment.title}" du planning de ${memberName} ?\n\nExemple : rendez-vous annulé.`,
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -114,13 +114,13 @@ export default function MemberPlanningScreen({ route }: Props) {
               appointment={item}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              canDelete={true} // tout membre peut supprimer
-              canEdit={isCreator(item)} // seul le créateur peut modifier
+              canDelete={true}
+              canEdit={isCreator(item)}
             />
           )}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>📅</Text>
+              <Text style={styles.emptyIcon}>{"📅"}</Text>
               <Text style={styles.emptyText}>
                 Aucun rendez-vous pour {memberName}.
               </Text>
