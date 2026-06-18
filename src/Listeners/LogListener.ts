@@ -18,6 +18,12 @@ export class LogListener {
       console.log(`[LogListener] Todo deleted: ${todo.title}`);
     });
 
+    emitter.on(TodoEvents.TODO_ASSIGNED, (todo) => {
+      console.log(
+        `[LogListener] Todo assigned: ${todo.title} → member ${todo.assigned_to}`,
+      );
+    });
+
     authEmitter.on(AuthEvents.LOGIN_SUCCESS, (user) => {
       console.log(`[LogListener] User logged: ${user.email}`);
     });

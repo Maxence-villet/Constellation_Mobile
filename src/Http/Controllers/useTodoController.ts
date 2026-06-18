@@ -1,9 +1,11 @@
 // src/Http/Controllers/useTodoController.ts
 import { FetchTodosAction } from "@/src/Actions/FetchTodosAction";
 import { useEffect, useState } from "react";
+import { AssignTodoAction } from "../../Actions/AssignTodoAction";
 import { CreateTodoAction } from "../../Actions/CreateTodoAction";
 import { DeleteTodoAction } from "../../Actions/DeleteTodoAction";
 import { ToggleTodoAction } from "../../Actions/ToggleTodoAction";
+import { AssignTodoDTO } from "../../DTOs/AssignTodoDTO";
 import { CreateTodoDTO } from "../../DTOs/CreateTodoDTO";
 import { Todo } from "../../Models/Todo";
 
@@ -39,5 +41,13 @@ export function useTodoController() {
     setTodos((prev: Todo[]) => prev.filter((t: Todo) => t.id !== todo.id));
   };
 
-  return { todos, add, toggle, remove };
+  const assign = async (dto: AssignTodoDTO): Promise<void> => {
+    const action = new AssignTodoAction();
+    const updatedTodo = await action.execute(dto);
+    setTodos((prev: Todo[]) =>
+      prev.map((t: Todo) => (t.id === updatedTodo.id ? updatedTodo : t)),
+    );
+  };
+
+  return { todos, add, toggle, remove, assign };
 }

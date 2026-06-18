@@ -18,6 +18,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ConstellationsStackParamList } from "../routes/app.routes";
 import { useMemberController } from "../src/Http/Controllers/useMemberController";
 import { useTodoController } from "../src/Http/Controllers/useTodoController";
+import AssignMemberModal, {
+  MemberOption,
+} from "../src/View/Components/AssignMemberModal";
+import { AssignTodoDTO } from "../src/DTOs/AssignTodoDTO";
 import { Todo } from "../src/Models/Todo";
 
 type Props = NativeStackScreenProps<
@@ -61,12 +65,44 @@ export default function ConstellationDetailScreen({ route }: Props) {
   // Etat local des membres pour refléter les exclusions sans rechargement
   const [members, setMembers] = useState<any[]>(route.params.members ?? []);
 
+  // État du modal d'attribution
+  const [assignModalVisible, setAssignModalVisible] = useState(false);
+  const [todoToAssign, setTodoToAssign] = useState<Todo | null>(null);
+
   const { excludeMember } = useMemberController();
-  const { todos, remove } = useTodoController();
+  const { todos, remove, assign } = useTodoController();
 
   // Détermine si l'utilisateur courant est le propriétaire (Sirius)
   const currentUserIsSirius =
     members.find((m: any) => m.user?.isCurrentUser === true)?.role === "Sirius";
+
+  // Membres de la constellation pour le sélecteur d'attribution
+  const memberOptions: MemberOption[] = members.map((m: any) => ({
+    id: m.id,
+    pseudo: m.user?.pseudo ?? "",
+    firstName: m.user?.firstName ?? "",
+    lastName: m.user?.lastName ?? "",
+  }));
+
+  const handleAssignPress = (todo: Todo) => {
+    setTodoToAssign(todo);
+    setAssignModalVisible(true);
+  };
+
+  const handleAssignConfirm = async (memberId: string) => {
+    if (!todoToAssign) return;
+    setAssignModalVisible(false);
+    const dto: AssignTodoDTO = { todoId: todoToAssign.id, memberId };
+    setTodoToAssign(null);
+    try {
+      await assign(dto);
+    } catch (err: any) {
+      Alert.alert(
+        "Erreur",
+        err.message ?? "Impossible d'attribuer cette tâche.",
+      );
+    }
+  };
 
   const handleDeleteTask = (todo: Todo) => {
     Alert.alert(
@@ -245,10 +281,53 @@ export default function ConstellationDetailScreen({ route }: Props) {
                 )}
               </View>
               <Text style={styles.taskTitle}>{todo.title}</Text>
+
+              {/* Assigné à */}
+              {todo.assigned_to &&
+                (() => {
+                  const assignee = members.find(
+                    (m: any) => m.id === todo.assigned_to,
+                  );
+                  const name =
+                    assignee?.user?.pseudo ?? assignee?.user?.firstName ?? null;
+                  return name ? (
+                    <View style={styles.assigneeRow}>
+                      <Ionicons
+                        name="person-outline"
+                        size={12}
+                        color="#0d084d"
+                      />
+                      <Text style={styles.assigneeText}>{name}</Text>
+                    </View>
+                  ) : null;
+                })()}
+
+              {/* Bouton Attribuer */}
+              <TouchableOpacity
+                style={styles.assignBtn}
+                onPress={() => handleAssignPress(todo)}
+              >
+                <Ionicons name="person-add-outline" size={14} color="#0d084d" />
+                <Text style={styles.assignBtnText}>
+                  {todo.assigned_to ? "Réattribuer" : "Attribuer"}
+                </Text>
+              </TouchableOpacity>
             </View>
           );
         })}
       </ScrollView>
+
+      {/* Modal de sélection du membre */}
+      <AssignMemberModal
+        visible={assignModalVisible}
+        taskTitle={todoToAssign?.title ?? ""}
+        members={memberOptions}
+        onSelect={handleAssignConfirm}
+        onClose={() => {
+          setAssignModalVisible(false);
+          setTodoToAssign(null);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -422,5 +501,34 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     textAlign: "center",
     paddingVertical: 24,
+  },
+  assigneeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+  },
+  assigneeText: {
+    fontSize: 12,
+    color: "#0d084d",
+    fontWeight: "500",
+  },
+  assignBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 10,
+    alignSelf: "flex-start",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: "#0d084d0f",
+    borderWidth: 1,
+    borderColor: "#0d084d20",
+  },
+  assignBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0d084d",
   },
 });
