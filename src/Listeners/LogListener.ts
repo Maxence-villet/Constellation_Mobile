@@ -56,8 +56,8 @@ export class LogListener {
       console.log(`[LogListener] Appointment deleted: ${a.title}`);
     });
 
-    authEmitter.on(AuthEvents.LOGIN_SUCCESS, (user) => {
-      console.log(`[LogListener] User logged: ${user.email}`);
+    authEmitter.on(AuthEvents.LOGIN_SUCCESS, () => {
+      console.log("[LogListener] User logged in successfully");
     });
 
     authEmitter.on(AuthEvents.LOGOUT, () => {

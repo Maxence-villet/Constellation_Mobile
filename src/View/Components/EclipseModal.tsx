@@ -69,15 +69,12 @@ export default function EclipseModal({
           <View style={styles.titleTexts}>
             <Text style={styles.title}>Créer une Éclipse</Text>
             <Text style={styles.subtitle} numberOfLines={2}>
-              "{todoTitle}"
+              {`"${todoTitle}"`}
             </Text>
           </View>
         </View>
 
-        <ScrollView
-          style={styles.scroll}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Historique des délégations */}
           {eclipseHistory.length > 0 && (
             <View style={styles.historySection}>
@@ -133,9 +130,7 @@ export default function EclipseModal({
                 >
                   <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
-                      {(item.pseudo || item.firstName)
-                        .charAt(0)
-                        .toUpperCase()}
+                      {(item.pseudo || item.firstName).charAt(0).toUpperCase()}
                     </Text>
                   </View>
                   <View style={styles.memberInfo}>

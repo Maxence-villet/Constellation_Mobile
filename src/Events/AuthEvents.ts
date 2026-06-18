@@ -3,7 +3,7 @@
 import mitt from "mitt";
 
 type AuthEventsMap = {
-  LOGIN_SUCCESS: { email: string };
+  LOGIN_SUCCESS: { token: string };
   LOGOUT: void;
 };
 

@@ -12,6 +12,7 @@ export class CreateTodoAction {
       id: String(idCounter),
       title: dto.title.trim(),
       completed: false,
+      status: "todo",
     });
 
     emitter.emit(TodoEvents.TODO_ADDED, newTodo);

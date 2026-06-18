@@ -49,7 +49,7 @@ export default function AssignMemberModal({
 
         <Text style={styles.title}>Attribuer la tâche</Text>
         <Text style={styles.subtitle} numberOfLines={2}>
-          "{taskTitle}"
+          {`"${taskTitle}"`}
         </Text>
 
         <FlatList
