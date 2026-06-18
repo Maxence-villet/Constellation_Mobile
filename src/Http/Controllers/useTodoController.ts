@@ -33,9 +33,9 @@ export function useTodoController() {
     );
   };
 
-  const remove = (todo: Todo) => {
+  const remove = async (todo: Todo): Promise<void> => {
     const action = new DeleteTodoAction();
-    action.execute(todo);
+    await action.execute(todo);
     setTodos((prev: Todo[]) => prev.filter((t: Todo) => t.id !== todo.id));
   };
 

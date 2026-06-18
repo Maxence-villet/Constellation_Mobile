@@ -17,55 +17,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ConstellationsStackParamList } from "../routes/app.routes";
 import { useMemberController } from "../src/Http/Controllers/useMemberController";
+import { useTodoController } from "../src/Http/Controllers/useTodoController";
+import { Todo } from "../src/Models/Todo";
 
 type Props = NativeStackScreenProps<
   ConstellationsStackParamList,
   "ConstellationDetail"
 >;
-
-interface FakeTask {
-  id: string;
-  title: string;
-  description: string;
-  status: "todo" | "in_progress" | "done";
-  priority: "low" | "medium" | "high";
-  category: string;
-}
-
-const FAKE_TASKS: FakeTask[] = [
-  {
-    id: "1",
-    title: "Faire les courses",
-    description: "Lait, pain, legumes",
-    status: "todo",
-    priority: "medium",
-    category: "errand",
-  },
-  {
-    id: "2",
-    title: "Nettoyer le salon",
-    description: "Aspirateur + vitres",
-    status: "in_progress",
-    priority: "low",
-    category: "chore",
-  },
-  {
-    id: "3",
-    title: "Preparer la reunion",
-    description: "Slides et agenda",
-    status: "done",
-    priority: "high",
-    category: "work",
-  },
-  {
-    id: "4",
-    title: "Appeler le plombier",
-    description: "Fuite robinet cuisine",
-    status: "todo",
-    priority: "high",
-    category: "errand",
-  },
-];
 
 const AVATAR_COLORS = [
   "#FF660070",
@@ -95,32 +53,6 @@ function getRoleLabel(role: string): string {
   }
 }
 
-function getStatusStyle(status: FakeTask["status"]): {
-  bg: string;
-  text: string;
-  label: string;
-} {
-  switch (status) {
-    case "todo":
-      return { bg: "#f1f5f9", text: "#94a3b8", label: "A faire" };
-    case "in_progress":
-      return { bg: "#fff7ed", text: "#f97316", label: "En cours" };
-    case "done":
-      return { bg: "#f0fdf4", text: "#16a34a", label: "Termine" };
-  }
-}
-
-function getPriorityColor(priority: FakeTask["priority"]): string {
-  switch (priority) {
-    case "low":
-      return "#10b981";
-    case "medium":
-      return "#f59e0b";
-    case "high":
-      return "#ef4444";
-  }
-}
-
 export default function ConstellationDetailScreen({ route }: Props) {
   const navigation =
     useNavigation<NativeStackNavigationProp<ConstellationsStackParamList>>();
@@ -130,10 +62,35 @@ export default function ConstellationDetailScreen({ route }: Props) {
   const [members, setMembers] = useState<any[]>(route.params.members ?? []);
 
   const { excludeMember } = useMemberController();
+  const { todos, remove } = useTodoController();
 
   // Détermine si l'utilisateur courant est le propriétaire (Sirius)
   const currentUserIsSirius =
     members.find((m: any) => m.user?.isCurrentUser === true)?.role === "Sirius";
+
+  const handleDeleteTask = (todo: Todo) => {
+    Alert.alert(
+      "Supprimer la tâche",
+      `Voulez-vous supprimer la tâche "${todo.title}" ?`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await remove(todo);
+            } catch (err: any) {
+              Alert.alert(
+                "Erreur",
+                err.message ?? "Impossible de supprimer cette tâche.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleExclude = (memberId: string, pseudo: string) => {
     Alert.alert(
@@ -252,12 +209,18 @@ export default function ConstellationDetailScreen({ route }: Props) {
         />
 
         {/* Section Taches */}
-        <Text style={styles.sectionTitle}>Taches en cours</Text>
-        {FAKE_TASKS.map((task) => {
-          const statusStyle = getStatusStyle(task.status);
-          const priorityColor = getPriorityColor(task.priority);
+        <Text style={styles.sectionTitle}>Tâches du groupe</Text>
+        {todos.length === 0 && (
+          <Text style={styles.emptyText}>
+            Aucune tâche pour cette constellation.
+          </Text>
+        )}
+        {todos.map((todo) => {
+          const statusStyle = todo.completed
+            ? { bg: "#f0fdf4", text: "#16a34a", label: "Terminée" }
+            : { bg: "#f1f5f9", text: "#94a3b8", label: "À faire" };
           return (
-            <View key={task.id} style={styles.taskCard}>
+            <View key={todo.id} style={styles.taskCard}>
               <View style={styles.taskHeader}>
                 <View
                   style={[
@@ -271,15 +234,17 @@ export default function ConstellationDetailScreen({ route }: Props) {
                     {statusStyle.label}
                   </Text>
                 </View>
-                <View
-                  style={[
-                    styles.priorityDot,
-                    { backgroundColor: priorityColor },
-                  ]}
-                />
+                {currentUserIsSirius && (
+                  <TouchableOpacity
+                    style={styles.deleteTaskBtn}
+                    onPress={() => handleDeleteTask(todo)}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Ionicons name="trash" size={16} color="#ef4444" />
+                  </TouchableOpacity>
+                )}
               </View>
-              <Text style={styles.taskTitle}>{task.title}</Text>
-              <Text style={styles.taskDesc}>{task.description}</Text>
+              <Text style={styles.taskTitle}>{todo.title}</Text>
             </View>
           );
         })}
@@ -435,19 +400,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  priorityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
+
   taskTitle: {
     fontSize: 15,
     fontWeight: "700",
     color: "#0f172a",
     marginBottom: 4,
   },
-  taskDesc: {
-    fontSize: 13,
-    color: "#64748b",
+  deleteTaskBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#fef2f2",
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#94a3b8",
+    textAlign: "center",
+    paddingVertical: 24,
   },
 });
