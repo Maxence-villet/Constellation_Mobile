@@ -305,7 +305,18 @@ export default function ConstellationDetailScreen({ route }: Props) {
             const showExcludeBtn = currentUserIsSirius && !isCurrentUser;
 
             return (
-              <View style={styles.memberCard}>
+              <TouchableOpacity
+                style={styles.memberCard}
+                onPress={() =>
+                  navigation.navigate("MemberPlanning", {
+                    memberId,
+                    memberName: pseudo || firstName,
+                    constellationId: route.params.constellationId,
+                    constellationName,
+                  })
+                }
+                activeOpacity={0.8}
+              >
                 {/* Bouton d'exclusion */}
                 {showExcludeBtn && (
                   <TouchableOpacity
@@ -336,7 +347,13 @@ export default function ConstellationDetailScreen({ route }: Props) {
                   {firstName} {lastName}
                 </Text>
                 <Text style={styles.memberRole}>{getRoleLabel(role)}</Text>
-              </View>
+
+                {/* Indicateur planning */}
+                <View style={styles.planningBadge}>
+                  <Ionicons name="calendar-outline" size={10} color="#0d084d" />
+                  <Text style={styles.planningBadgeText}>Planning</Text>
+                </View>
+              </TouchableOpacity>
             );
           }}
         />
@@ -585,6 +602,21 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: "center",
     width: 110,
+  },
+  planningBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 6,
+    backgroundColor: "#0d084d0f",
+    borderRadius: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 7,
+  },
+  planningBadgeText: {
+    fontSize: 10,
+    color: "#0d084d",
+    fontWeight: "600",
   },
   excludeBtn: {
     position: "absolute",

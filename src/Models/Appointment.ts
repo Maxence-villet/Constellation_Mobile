@@ -12,6 +12,8 @@ export interface AppointmentAttributes {
   date: string; // ISO 8601 : "2024-12-25T14:30:00"
   constellationId: string;
   reminders: ReminderAttributes[];
+  assigned_to_member_id?: string | null; // membre à qui appartient le RDV
+  created_by_user_id?: string | null; // créateur (pour contrôle suppression)
 }
 
 export class Appointment {
@@ -21,6 +23,8 @@ export class Appointment {
   public date: string;
   public constellationId: string;
   public reminders: ReminderAttributes[];
+  public assigned_to_member_id?: string | null;
+  public created_by_user_id?: string | null;
 
   // Les 3 rappels activés par défaut (T-24h, T-3h, T-1h)
   static readonly DEFAULT_REMINDERS: ReminderAttributes[] = [
@@ -36,6 +40,8 @@ export class Appointment {
     this.date = attributes.date;
     this.constellationId = attributes.constellationId;
     this.reminders = attributes.reminders ?? [...Appointment.DEFAULT_REMINDERS];
+    this.assigned_to_member_id = attributes.assigned_to_member_id ?? null;
+    this.created_by_user_id = attributes.created_by_user_id ?? null;
   }
 
   formattedDate(): string {
@@ -64,6 +70,8 @@ export class Appointment {
       date: this.date,
       constellationId: this.constellationId,
       reminders: this.reminders,
+      assigned_to_member_id: this.assigned_to_member_id,
+      created_by_user_id: this.created_by_user_id,
     };
   }
 }

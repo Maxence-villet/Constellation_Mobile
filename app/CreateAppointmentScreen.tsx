@@ -21,10 +21,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ConstellationsStackParamList } from "../routes/app.routes";
 import { useAppointmentController } from "../src/Http/Controllers/useAppointmentController";
-import {
-  Appointment,
-  ReminderAttributes,
-} from "../src/Models/Appointment";
+import { Appointment, ReminderAttributes } from "../src/Models/Appointment";
 
 type Props = NativeStackScreenProps<
   ConstellationsStackParamList,
@@ -62,7 +59,13 @@ function isoToTimeStr(iso: string): string {
 export default function CreateAppointmentScreen({ route }: Props) {
   const navigation =
     useNavigation<NativeStackNavigationProp<ConstellationsStackParamList>>();
-  const { constellationId, constellationName, appointment } = route.params;
+  const {
+    constellationId,
+    constellationName,
+    appointment,
+    assignedToMemberId,
+    assignedToMemberName,
+  } = route.params;
   const isEditMode = !!appointment;
 
   const { create, update } = useAppointmentController();
@@ -147,6 +150,7 @@ export default function CreateAppointmentScreen({ route }: Props) {
           date: isoDate,
           constellationId,
           reminders,
+          assigned_to_member_id: assignedToMemberId ?? null,
         });
       }
 
@@ -188,6 +192,16 @@ export default function CreateAppointmentScreen({ route }: Props) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Bandeau membre assigné */}
+          {assignedToMemberName ? (
+            <View style={styles.assigneeBanner}>
+              <Ionicons name="person-outline" size={14} color="#0d084d" />
+              <Text style={styles.assigneeBannerText}>
+                Pour : {assignedToMemberName}
+              </Text>
+            </View>
+          ) : null}
+
           {/* Titre */}
           <Text style={styles.label}>Titre *</Text>
           <TextInput
@@ -242,11 +256,7 @@ export default function CreateAppointmentScreen({ route }: Props) {
           <View style={styles.chipsRow}>
             {Appointment.DEFAULT_REMINDERS.map((r, i) => (
               <View key={i} style={styles.defaultChip}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={13}
-                  color="#16a34a"
-                />
+                <Ionicons name="checkmark-circle" size={13} color="#16a34a" />
                 <Text style={styles.defaultChipText}>{r.label}</Text>
               </View>
             ))}
@@ -263,10 +273,11 @@ export default function CreateAppointmentScreen({ route }: Props) {
               return (
                 <TouchableOpacity
                   key={i}
-                  style={[styles.customChip, selected && styles.customChipSelected]}
-                  onPress={() =>
-                    setCustomReminderIndex(selected ? null : i)
-                  }
+                  style={[
+                    styles.customChip,
+                    selected && styles.customChipSelected,
+                  ]}
+                  onPress={() => setCustomReminderIndex(selected ? null : i)}
                 >
                   <Text
                     style={[
@@ -364,6 +375,23 @@ const styles = StyleSheet.create({
     height: 90,
     textAlignVertical: "top",
     paddingTop: 12,
+  },
+  assigneeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#0d084d0f",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#0d084d20",
+  },
+  assigneeBannerText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0d084d",
   },
   sectionTitle: {
     fontSize: 14,

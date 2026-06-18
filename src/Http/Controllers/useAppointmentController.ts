@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CreateAppointmentAction } from "../../Actions/CreateAppointmentAction";
 import { DeleteAppointmentAction } from "../../Actions/DeleteAppointmentAction";
 import { FetchAppointmentsAction } from "../../Actions/FetchAppointmentsAction";
+import { FetchMemberAppointmentsAction } from "../../Actions/FetchMemberAppointmentsAction";
 import { UpdateAppointmentAction } from "../../Actions/UpdateAppointmentAction";
 import { CreateAppointmentDTO } from "../../DTOs/CreateAppointmentDTO";
 import { UpdateAppointmentDTO } from "../../DTOs/UpdateAppointmentDTO";
@@ -45,5 +46,27 @@ export function useAppointmentController() {
     setAppointments((prev) => prev.filter((a) => a.id !== appointment.id));
   };
 
-  return { appointments, isLoading, load, create, update, remove };
+  // Charge les RDV assignés à un membre spécifique (planning du membre)
+  const loadForMember = async (memberId: string): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const action = new FetchMemberAppointmentsAction();
+      const data = await action.execute(memberId);
+      setAppointments(data);
+    } catch {
+      setAppointments([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    appointments,
+    isLoading,
+    load,
+    loadForMember,
+    create,
+    update,
+    remove,
+  };
 }

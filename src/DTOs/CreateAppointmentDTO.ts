@@ -7,4 +7,5 @@ export interface CreateAppointmentDTO {
   date: string; // ISO 8601
   constellationId: string;
   reminders: ReminderAttributes[];
+  assigned_to_member_id?: string | null; // optionnel : attribuer à un autre membre
 }

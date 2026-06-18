@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigatorScreenParams } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AppointmentListScreen from "../app/AppointmentListScreen";
+import MemberPlanningScreen from "../app/MemberPlanningScreen";
 import ChatScreen from "../app/ChatScreen";
 import CreateAppointmentScreen from "../app/CreateAppointmentScreen";
 import ConstellationDetailScreen from "../app/ConstellationDetailScreen";
@@ -39,6 +40,14 @@ export type ConstellationsStackParamList = {
     constellationId: string;
     constellationName: string;
     appointment?: AppointmentAttributes;
+    assignedToMemberId?: string;
+    assignedToMemberName?: string;
+  };
+  MemberPlanning: {
+    memberId: string;
+    memberName: string;
+    constellationId: string;
+    constellationName: string;
   };
 };
 
@@ -101,6 +110,10 @@ function ConstellationsStackNavigator() {
       <ConstellationsStack.Screen
         name="CreateAppointment"
         component={CreateAppointmentScreen}
+      />
+      <ConstellationsStack.Screen
+        name="MemberPlanning"
+        component={MemberPlanningScreen}
       />
     </ConstellationsStack.Navigator>
   );
