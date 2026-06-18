@@ -1,11 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   ScrollView,
@@ -16,56 +17,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ConstellationsStackParamList } from "../routes/app.routes";
+import { useAuth } from "../src/Contexts/AuthContexts";
 import { useMemberController } from "../src/Http/Controllers/useMemberController";
+import { useTaskController } from "../src/Http/Controllers/useTaskController";
+import { TaskAttributes } from "../src/Models/Task";
 
 type Props = NativeStackScreenProps<
   ConstellationsStackParamList,
   "ConstellationDetail"
 >;
-
-interface FakeTask {
-  id: string;
-  title: string;
-  description: string;
-  status: "todo" | "in_progress" | "done";
-  priority: "low" | "medium" | "high";
-  category: string;
-}
-
-const FAKE_TASKS: FakeTask[] = [
-  {
-    id: "1",
-    title: "Faire les courses",
-    description: "Lait, pain, legumes",
-    status: "todo",
-    priority: "medium",
-    category: "errand",
-  },
-  {
-    id: "2",
-    title: "Nettoyer le salon",
-    description: "Aspirateur + vitres",
-    status: "in_progress",
-    priority: "low",
-    category: "chore",
-  },
-  {
-    id: "3",
-    title: "Preparer la reunion",
-    description: "Slides et agenda",
-    status: "done",
-    priority: "high",
-    category: "work",
-  },
-  {
-    id: "4",
-    title: "Appeler le plombier",
-    description: "Fuite robinet cuisine",
-    status: "todo",
-    priority: "high",
-    category: "errand",
-  },
-];
 
 const AVATAR_COLORS = [
   "#FF660070",
@@ -82,6 +42,7 @@ const AVATAR_TEXT_COLORS = [
   "#f59e0b",
 ];
 
+// ─── Helpers roles ────────────────────────────────────
 function getRoleLabel(role: string): string {
   switch (role) {
     case "Sirius":
@@ -95,7 +56,8 @@ function getRoleLabel(role: string): string {
   }
 }
 
-function getStatusStyle(status: FakeTask["status"]): {
+// ─── Helpers statut tache ────────────────────────────
+function getStatusStyle(status: string): {
   bg: string;
   text: string;
   label: string;
@@ -105,12 +67,17 @@ function getStatusStyle(status: FakeTask["status"]): {
       return { bg: "#f1f5f9", text: "#94a3b8", label: "A faire" };
     case "in_progress":
       return { bg: "#fff7ed", text: "#f97316", label: "En cours" };
+    case "pending_validation":
+      return { bg: "#fef9c3", text: "#ca8a04", label: "En validation" };
     case "done":
       return { bg: "#f0fdf4", text: "#16a34a", label: "Termine" };
+    default:
+      return { bg: "#f1f5f9", text: "#94a3b8", label: status };
   }
 }
 
-function getPriorityColor(priority: FakeTask["priority"]): string {
+// ─── Helpers priorite tache ──────────────────────────
+function getPriorityColor(priority: string): string {
   switch (priority) {
     case "low":
       return "#10b981";
@@ -118,22 +85,118 @@ function getPriorityColor(priority: FakeTask["priority"]): string {
       return "#f59e0b";
     case "high":
       return "#ef4444";
+    default:
+      return "#94a3b8";
   }
 }
 
+// ─── Composant carte tache ────────────────────────────
+function TaskCard({
+  task,
+  assigneeName,
+  isAssignedToCurrentUser,
+  currentUserPseudo,
+}: {
+  task: TaskAttributes;
+  assigneeName: string | null;
+  isAssignedToCurrentUser: boolean;
+  currentUserPseudo: string | null;
+}) {
+  const statusStyle = getStatusStyle(task.status);
+  const priorityColor = getPriorityColor(task.priority);
+
+  return (
+    <View style={styles.taskCard}>
+      <View style={styles.taskHeader}>
+        <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+          <Text style={[styles.statusText, { color: statusStyle.text }]}>
+            {statusStyle.label}
+          </Text>
+        </View>
+        <View
+          style={[styles.priorityDot, { backgroundColor: priorityColor }]}
+        />
+      </View>
+      <Text style={styles.taskTitle}>{task.title}</Text>
+      {task.description ? (
+        <Text style={styles.taskDesc} numberOfLines={2}>
+          {task.description}
+        </Text>
+      ) : null}
+      {assigneeName ? (
+        <View style={styles.assigneeRow}>
+          <Ionicons name="person-outline" size={12} color="#64748b" />
+          <Text style={styles.assigneeText} numberOfLines={1}>
+            {assigneeName}
+          </Text>
+          {isAssignedToCurrentUser && (
+            <View style={styles.assigneeYouBadge}>
+              <Text style={styles.assigneeYouBadgeText}>Vous</Text>
+            </View>
+          )}
+        </View>
+      ) : (
+        <View style={styles.assigneeRow}>
+          <Ionicons name="person-outline" size={12} color="#94a3b8" />
+          <Text style={styles.assigneeTextUnassigned}>
+            {currentUserPseudo ? `${currentUserPseudo}` : "Non assigne"}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ─── Ecran principal ──────────────────────────────────
 export default function ConstellationDetailScreen({ route }: Props) {
   const navigation =
     useNavigation<NativeStackNavigationProp<ConstellationsStackParamList>>();
-  const { constellationName, constellationDescription } = route.params;
 
-  // Etat local des membres pour refléter les exclusions sans rechargement
+  const { constellationId, constellationName, constellationDescription } =
+    route.params;
+
   const [members, setMembers] = useState<any[]>(route.params.members ?? []);
 
+  const { user: currentUser } = useAuth();
   const { excludeMember } = useMemberController();
+  const { tasks, isLoading: isLoadingTasks } =
+    useTaskController(constellationId);
 
-  // Détermine si l'utilisateur courant est le propriétaire (Sirius)
+  // Determine si l'utilisateur courant est le proprietaire (Sirius)
   const currentUserIsSirius =
     members.find((m: any) => m.user?.isCurrentUser === true)?.role === "Sirius";
+
+  // Indexe les membres par id_user pour trouver le nom de l'assigne
+  const membersByUserId: Record<string, { pseudo: string; firstName: string }> =
+    {};
+  for (const m of members) {
+    const uid = m.id_user ?? m.user?.id;
+    if (uid) {
+      const pseudo = m.user?.pseudo ?? m.pseudo ?? "";
+      const firstName =
+        m.user?.firstName ?? m.firstName ?? m.user?.first_name ?? "";
+      membersByUserId[String(uid)] = { pseudo, firstName };
+    }
+  }
+
+  // Enrichit avec l'utilisateur de la session (pseudo toujours disponible)
+  if (currentUser?.id) {
+    const uid = String(currentUser.id);
+    if (!membersByUserId[uid]) {
+      membersByUserId[uid] = {
+        pseudo: currentUser.pseudo ?? "",
+        firstName: currentUser.firstName ?? "",
+      };
+    } else {
+      // Complete les champs manquants avec les donnees de session
+      if (!membersByUserId[uid].pseudo && currentUser.pseudo) {
+        membersByUserId[uid].pseudo = currentUser.pseudo;
+      }
+      if (!membersByUserId[uid].firstName && currentUser.firstName) {
+        membersByUserId[uid].firstName = currentUser.firstName;
+      }
+    }
+  }
 
   const handleExclude = (memberId: string, pseudo: string) => {
     Alert.alert(
@@ -147,7 +210,6 @@ export default function ConstellationDetailScreen({ route }: Props) {
           onPress: async () => {
             try {
               await excludeMember(memberId);
-              // Mise à jour locale : retire le membre exclu de la liste
               setMembers((prev: any[]) =>
                 prev.filter((m: any) => m.id !== memberId),
               );
@@ -204,19 +266,15 @@ export default function ConstellationDetailScreen({ route }: Props) {
             const isCurrentUser: boolean = item?.user?.isCurrentUser === true;
             const role: string = item?.role ?? "";
             const memberId: string = item?.id ?? "";
-            const initial = firstName.charAt(0).toUpperCase() || "?";
+            const initial =
+              (firstName || pseudo).charAt(0).toUpperCase() || "?";
             const avatarBg = AVATAR_COLORS[index % AVATAR_COLORS.length];
             const avatarText =
               AVATAR_TEXT_COLORS[index % AVATAR_TEXT_COLORS.length];
-
-            // Affiche le bouton d'exclusion si :
-            // - l'utilisateur courant est Sirius (propriétaire)
-            // - ET le membre n'est pas l'utilisateur courant lui-même
             const showExcludeBtn = currentUserIsSirius && !isCurrentUser;
 
             return (
               <View style={styles.memberCard}>
-                {/* Bouton d'exclusion */}
                 {showExcludeBtn && (
                   <TouchableOpacity
                     style={styles.excludeBtn}
@@ -226,19 +284,16 @@ export default function ConstellationDetailScreen({ route }: Props) {
                     <Ionicons name="trash" size={13} color="#ef4444" />
                   </TouchableOpacity>
                 )}
-
                 <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
                   <Text style={[styles.avatarText, { color: avatarText }]}>
                     {initial}
                   </Text>
                 </View>
-
                 {isCurrentUser && (
                   <View style={styles.youBadge}>
                     <Text style={styles.youBadgeText}>Vous</Text>
                   </View>
                 )}
-
                 <Text style={styles.memberPseudo} numberOfLines={1}>
                   {pseudo || firstName}
                 </Text>
@@ -252,37 +307,57 @@ export default function ConstellationDetailScreen({ route }: Props) {
         />
 
         {/* Section Taches */}
-        <Text style={styles.sectionTitle}>Taches en cours</Text>
-        {FAKE_TASKS.map((task) => {
-          const statusStyle = getStatusStyle(task.status);
-          const priorityColor = getPriorityColor(task.priority);
-          return (
-            <View key={task.id} style={styles.taskCard}>
-              <View style={styles.taskHeader}>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: statusStyle.bg },
-                  ]}
-                >
-                  <Text
-                    style={[styles.statusText, { color: statusStyle.text }]}
-                  >
-                    {statusStyle.label}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.priorityDot,
-                    { backgroundColor: priorityColor },
-                  ]}
-                />
-              </View>
-              <Text style={styles.taskTitle}>{task.title}</Text>
-              <Text style={styles.taskDesc}>{task.description}</Text>
-            </View>
-          );
-        })}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Taches en cours</Text>
+          <TouchableOpacity
+            style={styles.addTaskBtn}
+            onPress={() =>
+              navigation.navigate("CreateTask", {
+                constellationId,
+                constellationName,
+                members,
+              })
+            }
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {isLoadingTasks ? (
+          <ActivityIndicator color="#0d084d" style={{ marginVertical: 24 }} />
+        ) : tasks.length === 0 ? (
+          <View style={styles.emptyTasks}>
+            <Text style={styles.emptyTasksIcon}>{"\u{1F4CB}"}</Text>
+            <Text style={styles.emptyTasksText}>
+              Aucune tache pour le moment
+            </Text>
+            <Text style={styles.emptyTasksHint}>
+              Appuyez sur + pour creer la premiere tache
+            </Text>
+          </View>
+        ) : (
+          tasks.map((task) => {
+            const assigneeInfo = task.assigned_to
+              ? (membersByUserId[String(task.assigned_to)] ?? null)
+              : null;
+            const assigneeName = assigneeInfo
+              ? `@${assigneeInfo.pseudo || assigneeInfo.firstName}`
+              : null;
+            const isAssignedToCurrentUser =
+              currentUser?.id != null &&
+              String(task.assigned_to) === String(currentUser.id);
+
+            return (
+              <TaskCard
+                key={task.id}
+                task={task}
+                assigneeName={assigneeName}
+                isAssignedToCurrentUser={isAssignedToCurrentUser}
+                currentUserPseudo={currentUser?.pseudo ?? null}
+              />
+            );
+          })
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -307,11 +382,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  backArrow: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#0d084d",
-  },
+  backArrow: { fontSize: 22, fontWeight: "700", color: "#0d084d" },
   headerTitle: {
     flex: 1,
     textAlign: "center",
@@ -325,7 +396,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 40,
   },
-
   description: {
     fontSize: 14,
     color: "#475569",
@@ -337,14 +407,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#0a2540",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 12,
     marginTop: 8,
   },
-
-  membersList: {
-    paddingBottom: 16,
-    gap: 12,
+  addTaskBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#0d084d",
+    alignItems: "center",
+    justifyContent: "center",
   },
+
+  // ─── Membres ───────────────────────────────────────
+  membersList: { paddingBottom: 16, gap: 12 },
   memberCard: {
     backgroundColor: "#f8fafc",
     borderRadius: 16,
@@ -368,7 +449,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 10,
   },
-
   avatar: {
     width: 48,
     height: 48,
@@ -377,10 +457,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 8,
   },
-  avatarText: {
-    fontSize: 20,
-    fontWeight: "700",
-  },
+  avatarText: { fontSize: 20, fontWeight: "700" },
   youBadge: {
     backgroundColor: "#0d084d",
     borderRadius: 10,
@@ -388,11 +465,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     marginBottom: 6,
   },
-  youBadgeText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
-  },
+  youBadgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
   memberPseudo: {
     fontSize: 13,
     fontWeight: "600",
@@ -411,6 +484,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
   },
+
+  // ─── Taches ────────────────────────────────────────
+  emptyTasks: {
+    alignItems: "center",
+    paddingVertical: 32,
+  },
+  emptyTasksIcon: { fontSize: 36, marginBottom: 10 },
+  emptyTasksText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#475569",
+    marginBottom: 4,
+  },
+  emptyTasksHint: { fontSize: 13, color: "#94a3b8", textAlign: "center" },
 
   taskCard: {
     backgroundColor: "#f8fafc",
@@ -431,23 +518,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  priorityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
+  statusText: { fontSize: 12, fontWeight: "600" },
+  priorityDot: { width: 10, height: 10, borderRadius: 5 },
   taskTitle: {
     fontSize: 15,
     fontWeight: "700",
     color: "#0f172a",
     marginBottom: 4,
   },
-  taskDesc: {
-    fontSize: 13,
+  taskDesc: { fontSize: 13, color: "#64748b", marginBottom: 6 },
+  assigneeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+  },
+  assigneeText: {
+    fontSize: 12,
     color: "#64748b",
+    fontWeight: "500",
+  },
+  assigneeTextUnassigned: {
+    fontSize: 12,
+    color: "#94a3b8",
+    fontStyle: "italic",
+  },
+  assigneeYouBadge: {
+    backgroundColor: "#0d084d",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 4,
+  },
+  assigneeYouBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
   },
 });

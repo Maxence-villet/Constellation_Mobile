@@ -15,6 +15,7 @@ import RegisterScreen from "../app/RegisterScreen";
 import WelcomeScreen from "../app/WelcomeScreen";
 import { useAuth } from "../src/Contexts/AuthContexts";
 import { BottomNavbar } from "../src/View/Components/BottomNavbar";
+import CreateTaskScreen from "@/app/CreateTaskScreen";
 
 export type HomeStackParamList = {
   Home: undefined;
@@ -30,6 +31,11 @@ export type ConstellationsStackParamList = {
     members: any[];
   };
   CreateConstellation: undefined;
+  CreateTask: {
+    constellationId: string;
+    constellationName: string;
+    members: any[];
+  };
   InviteMember: { constellationId: string; constellationName: string };
 };
 
@@ -84,6 +90,10 @@ function ConstellationsStackNavigator() {
       <ConstellationsStack.Screen
         name="InviteMember"
         component={InviteMemberScreen}
+      />
+      <ConstellationsStack.Screen
+        name="CreateTask"
+        component={CreateTaskScreen}
       />
     </ConstellationsStack.Navigator>
   );

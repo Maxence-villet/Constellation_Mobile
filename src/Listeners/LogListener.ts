@@ -19,7 +19,7 @@ export class LogListener {
     });
 
     authEmitter.on(AuthEvents.LOGIN_SUCCESS, (user) => {
-      console.log(`[LogListener] User logged: ${user.email}`);
+      console.log(`[LogListener] User logged: ${user.token}`);
     });
 
     authEmitter.on(AuthEvents.LOGOUT, () => {
