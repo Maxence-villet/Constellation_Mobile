@@ -42,6 +42,19 @@ export const http = {
     return res.json();
   },
 
+  patch: async <T>(body: unknown, path: string, auth = true): Promise<T> => {
+    const res = await fetch(`http://${BASE_URL}${path}`, {
+      method: "PATCH",
+      headers: await getHeaders(auth),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail);
+    }
+    return res.json();
+  },
+
   delete: async (path: string, auth = true): Promise<void> => {
     const res = await fetch(`http://${BASE_URL}${path}`, {
       method: "DELETE",

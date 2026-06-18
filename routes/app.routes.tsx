@@ -2,7 +2,9 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigatorScreenParams } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import AppointmentListScreen from "../app/AppointmentListScreen";
 import ChatScreen from "../app/ChatScreen";
+import CreateAppointmentScreen from "../app/CreateAppointmentScreen";
 import ConstellationDetailScreen from "../app/ConstellationDetailScreen";
 import ConstellationListScreen from "../app/ConstellationListScreen";
 import CreateConstellationScreen from "../app/CreateConstellationScreen";
@@ -14,6 +16,7 @@ import ProfileScreen from "../app/ProfileScreen";
 import RegisterScreen from "../app/RegisterScreen";
 import WelcomeScreen from "../app/WelcomeScreen";
 import { useAuth } from "../src/Contexts/AuthContexts";
+import { AppointmentAttributes } from "../src/Models/Appointment";
 import { BottomNavbar } from "../src/View/Components/BottomNavbar";
 
 export type HomeStackParamList = {
@@ -31,6 +34,12 @@ export type ConstellationsStackParamList = {
   };
   CreateConstellation: undefined;
   InviteMember: { constellationId: string; constellationName: string };
+  AppointmentList: { constellationId: string; constellationName: string };
+  CreateAppointment: {
+    constellationId: string;
+    constellationName: string;
+    appointment?: AppointmentAttributes;
+  };
 };
 
 export type MainTabsParamList = {
@@ -84,6 +93,14 @@ function ConstellationsStackNavigator() {
       <ConstellationsStack.Screen
         name="InviteMember"
         component={InviteMemberScreen}
+      />
+      <ConstellationsStack.Screen
+        name="AppointmentList"
+        component={AppointmentListScreen}
+      />
+      <ConstellationsStack.Screen
+        name="CreateAppointment"
+        component={CreateAppointmentScreen}
       />
     </ConstellationsStack.Navigator>
   );

@@ -1,5 +1,9 @@
 // src/Listeners/LogListener.ts
 import { authEmitter, AuthEvents } from "../Events/AuthEvents";
+import {
+  appointmentEmitter,
+  AppointmentEvents,
+} from "../Events/AppointmentEvents";
 import { emitter, TodoEvents } from "../Events/TodoEvents";
 
 export class LogListener {
@@ -22,6 +26,18 @@ export class LogListener {
       console.log(
         `[LogListener] Todo assigned: ${todo.title} → member ${todo.assigned_to}`,
       );
+    });
+
+    appointmentEmitter.on(AppointmentEvents.APPOINTMENT_CREATED, (a) => {
+      console.log(`[LogListener] Appointment created: ${a.title} @ ${a.date}`);
+    });
+
+    appointmentEmitter.on(AppointmentEvents.APPOINTMENT_UPDATED, (a) => {
+      console.log(`[LogListener] Appointment updated: ${a.title}`);
+    });
+
+    appointmentEmitter.on(AppointmentEvents.APPOINTMENT_DELETED, (a) => {
+      console.log(`[LogListener] Appointment deleted: ${a.title}`);
     });
 
     authEmitter.on(AuthEvents.LOGIN_SUCCESS, (user) => {

@@ -315,6 +315,22 @@ export default function ConstellationDetailScreen({ route }: Props) {
             </View>
           );
         })}
+
+        {/* Section Rendez-vous */}
+        <Text style={styles.sectionTitle}>Rendez-vous</Text>
+        <TouchableOpacity
+          style={styles.rdvBtn}
+          onPress={() =>
+            navigation.navigate("AppointmentList", {
+              constellationId: route.params.constellationId,
+              constellationName,
+            })
+          }
+        >
+          <Ionicons name="calendar-outline" size={18} color="#0d084d" />
+          <Text style={styles.rdvBtnText}>Voir les rendez-vous</Text>
+          <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Modal de sélection du membre */}
@@ -528,6 +544,24 @@ const styles = StyleSheet.create({
   },
   assignBtnText: {
     fontSize: 12,
+    fontWeight: "600",
+    color: "#0d084d",
+  },
+  rdvBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  rdvBtnText: {
+    flex: 1,
+    fontSize: 14,
     fontWeight: "600",
     color: "#0d084d",
   },
